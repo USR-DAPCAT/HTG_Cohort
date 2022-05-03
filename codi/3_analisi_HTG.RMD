@@ -1,0 +1,999 @@
+---
+title: 'Analisi Longitudinal[31.12.2010 -- 21.12.2018],fecha de inicio de la cohorte fecha mínima  con un valor HTG >=500 '
+author: "Jordi Real & Rai Puig"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_document:
+    css: logos_css/usr_styles.css
+    fig_caption: yes
+    toc: yes
+    toc_float: yes
+  pdf_document: default
+  word_document:
+    toc: yes
+params:
+   dir_dades_desti: "dades/mostra"  # "dades/poblacio
+   ANY: '2019'
+   website: https://github.com/USR-DAPCAT/
+---
+&nbsp;
+<script>
+   $(document).ready(function() {
+     $head = $('#header');
+     $head.prepend('<img src=\"https://www.idiapjgol.org/images/logo.png\" style=\"float: right ;width: 130px;\"/>')
+     $head.prepend('<img src=\"https://avatars2.githubusercontent.com/u/57066591?s=200&v=4\" style=\"margin-left:25% ;width: 80px;\"/>')
+     $head.prepend('<img src=\"logos_css/logoDAP_Cat.png\" style=\"float: left:1;width: 185px;\"/>')
+   });
+</script>
+
+
+<div class="watermark">DRAFT</div>
+
+****
+
+## 0. Estat:
+
+**agregacions i part global descriptiva**
+
+
+&check; Dates d'inclusió (DINDEX): L'estudi I: La data d'inclusió serà la primera determinació de triglicèrids per cada any natural de cada tall transversal[2010,2013,2016,2019] <br/>
+&check; En cas de més de una TG s'agafa la TG major per any <br/>
+&check; Criteris d'inclusió: <br/>
+&check; -Usuari del sistema de salut actiu inclosa a SIDIAP amb una data d'entrada al sistema mínima d'un any en data d'inclusió <br/>
+&check; -Tenir com a mínim una determinació de triglicèrids <br/>
+
+&check; Dm2 debut: min.date(dt_index1,dt_index2,dt_index3) <br/>
+&check; Problemes de SALUT:[dtagr_diagnostics_HTG] finestra.dies=c(-Inf,0) <br/>
+&check; Facturacio:[dtagr_facturat_HTG] [finestra.dies=c(-365,+30)] <br/>
+&check; Prescripcio:[dtagr_prescrip_HTG] [finestra.dies=c(-30,+30)] <br/>
+&check; dt_variables_HTG=dt_analitiques+dt_cliniques [finestra.dies = c(-365,+30)] <br/>
+&check; dtagr_variables_HTG2=filter (cod=="TG")[finestra.dies = c(-365,0)]max.valor <br/>
+&check; dt_tabaquisme [finestra.dies = c(-365,0)] <br/>
+&check; Revisio missings de pacients amb HDL  de pacients Greus i Molt Greus  HTG <br/>
+&check; Fer les grafiques de Distribucio dels valors TG de manera adequada % <br/>
+&check; Aplicar els canvis que hagin fet al Conductor. <br/>
+&check; Dm-Gestacional= ha estar embarassada al moment de la DM. <br/>
+&check; DIABETIS 3 Grups[DM1,DM2, DM-altres) <br/>
+&check; Nomes farmacs prescrits (FP) <br/>
+&check; A les Causes Secundaries, la DM  mal controlada, sera Glicada>8 <br/>
+&check; A taula Descriptiva General (Taula00 del conductor), hi hem afegir els BLOCS (Bloc 0,Bloc1,Bloc2,Bloc3) <br/>
+&check; Regions del mon WHO <br/>
+&check; Variable a crear COLESTASIS 1-50:COLESTASIS=0//50-100:COLESTASIS=1//>100:COLESTASIS=2 <br/>
+&check; HTG_COLESTASIS=1 IF COLESTATIS =1 or COLESTATIS =2; HTG_COLESTASIS=0 IF COLESTATIS =0 <br/>
+&check; Crear la variable IMC <25/25-30/>=30 <br/>
+&check; Bloc 1 o HTG secundaria primer esglao: : alcohol, IMC > 30 (>27.5 si ets asiatic), diabetis amb HbA1c > 8% (HbA1c >8)  <br/>
+&check; Bloc 2 o HTG secundaria segon  esglao: : Bloc1+hepatopatia+nefropatia (Chronic Renal Insufficiency GFR <60 or CAC> 300,o	FG<60,o	CAC>300,o	Hepatic steatosis,o	Hemochromatosis,o	HTG_COLESTASIS) <br/>
+&check; Bloc 3 o HTG secundaria tercer  esglao: : Bloc1+Bloc2+Mental diseases+o	Drugs that cause HTG[FP]+Drugs Acidretino[FP]+Antipsictics+Drugs[FP]+CICLOSPOR[FP]+EsteriodesDrugs[FP]+ESTROGEN[FP]+Sistemicas(DG.TRAST_SIST)+HIV+Thyrotropin>10+Cancer <br/> 
+&check; Bloc 0 o HTG primaries:Tots els que no estiguin als BLOC1,BLOC2,BLOC3 <br/>
+&check; Descriptiva General i per Blocs <br/>
+&check; Descriptiva Exploratoria HTG  per  Blocs.ComprovaciO de les variables que tenim als bloc <br/>
+
+
+Abril-Maig / 2022
+
+&check; Analisi Longitudinal[31.12.2010 -- 21.12.2018],fecha de inicio de la cohorte : fecha mínima  con un valor HTG >=500   <br/>
+
+Març / 2022
+
+&check; Hem fet el BLOC0 dels punts 3.7,3.8, i 3.10 (que faltaven) <br/>
+&check; Hem canviat la gràfica de la Distribucio de Triglicerids, mes amena <br/>
+&check; S ha fet un Blox-plot de la distribucio dels triglicerids agrupats en edat i sexe <br/>
+&check; S ha  agafat com a referencia Europa i no Africa, a la variable pais<br/>
+&check; s'ha executat els 4 talls,2010,2013,2016, i 2019 <br/>
+
+
+Desembre / 2021
+
+&check; Haviem canviat                   (==0  | is.na(.),0,1)  DG.,FF.,FP.,EMB3 <br/>
+&check; Hem canviat despres de la reunio (==0  | is.na(.),0,1)  HbA1c_7,HbA1c_8,TSH.10,HTG_COLESTASIS,ALCOHOL_CS,BLOC1,BLOC2,BLOC3 <br/>
+&check; Hem canviat hem rectificat DG.ENF_MENTAL a DG.ENF_MENTAL_G.  <br/>
+&check; Hem aplicat 5 Grups  <br/>
+&check; Bloc Secundari, traiem embaràs  <br/>
+&check; Afegir Edat+Tg continues <br/>
+
+
+ 
+**Pendents**
+
+&check; Revisio i depuracio errors.   <br/>
+
+# Fase de validacio de base
+
+## Fase Preparacio
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE, include=F,size="huge")
+
+# Notació no cientifica dels numeros
+options(scipen = 999)
+
+gc()
+
+
+# Funcio que elimina merdes tipo "#" dels resultats
+def <- knitr::knit_hooks$get("output")
+
+knitr::knit_hooks$set(output = function(x, options) {
+  x <- def(x, options)
+  ifelse(!is.null(options$suppress), gsub(pattern = "```.*```", "", x), x)
+})
+
+
+
+
+
+#######################################################
+#
+#
+# libreries i funcions
+library("dplyr")
+library("lubridate")
+library("compareGroups")
+library("sjPlot")
+library("tableone")
+library("magrittr")
+library("ggplot2")
+library("scales")
+#
+#
+# Descarregar funcions github -
+link_source<-paste0("https://github.com/jrealgatius/Stat_codis/blob/master/funcions_propies.R","?raw=T")
+devtools::source_url(link_source)
+#######################################################
+#conductor_codis<-here::here("codis_peucat.xlsx")
+#conductor<-here::here("conductor_Epipeu.xlsx")
+#
+#
+#
+############
+#17.02.2021#
+############
+#conductor_codis<-here::here("Cataleg_HTG.xlsx")
+
+conductor_codis2<-here::here("Cataleg_HTG_BIG.xlsx")
+conductor<-here::here("conductor_HTG.xlsx")
+```
+
+
+```{r funcions, include = FALSE}
+
+pvalue <- function(x, ...) {
+    # Construct vectors of data y, and groups (strata) g
+    
+    y <- unlist(x)
+    
+    g <- factor(rep(1:length(x), times=sapply(x, length)))
+    
+    
+    if (is.numeric(y)) {
+        # For numeric variables, perform a standard 2-sample t-test
+        #p <- t.test(y ~ g)$p.value
+        p <- summary(aov(y ~ g))[[1]][1,5]
+    } else {
+        # For categorical variables, perform a chi-squared test of independence
+        p <- chisq.test(table(y, g))$p.value
+    }
+    
+    # Format the p-value, using an HTML entity for the less-than sign.
+    # The initial empty string places the output on the line below the variable label.
+    c("", sub("<", "&lt;", format.pval(p, digits=3, eps=0.001)))
+}
+
+
+######################################################
+#set.seed(123)
+#Group<-rep(c("G1","G2","G3","G4"),times=5)
+#Response<-runif(20,2,5)
+#df<-data.frame(Group,Response)
+#df
+#ANOVA<-aov(Response~Group,df)
+#summary(ANOVA)
+#summary(ANOVA)[[1]][1,5]
+########################################################
+#-------------------------------------------------------------------------------------------------------------#
+#
+#
+formula.text2=function(x="taula1",y="resposta") {
+  
+  #y="TG.valor_CAT3b"
+  #x="age"
+  
+  x_sym<-sym(x)
+
+  
+  K<-as.formula(paste(y, x, sep=" ~ "))
+  
+  K }
+#
+#
+#-------------------------------------------------------------------------------------------------------------#
+#-------------------------------------------------------------------------------------------------------------#
+#
+#
+
+formula.text3=function(x="taula1",y="resposta") {
+  
+  #y="TG.valor_CAT3b"
+  #x="A"
+  
+  k="sexe+age"
+  
+  x=paste0(x,"+",k)
+  
+  x_sym<-sym(x)
+
+  K<-as.formula(paste(y, x, sep=" ~ "))
+  
+  K
+  
+}
+
+
+#-------------------------------------------------------------------------------------------------------------#
+#
+taula_coef<-function(x="taula1",y="resposta",a=" ",eliminar=c(" "),taulavariables='variables.xls',d=dat) {
+  
+#x="ajustBloc1"
+#y="TG.valor_CAT3b"
+#d=dades%>%filter(BLOC1=="Si")  
+#a=" "
+#eliminar=c(" ")  
+#taulavariables=conductor
+
+ GRUP<-formula.text(x=x,y=y,taulavariables=taulavariables,eliminar=eliminar)
+ 
+ mod1<-speedglm::speedglm(formula= GRUP, family = binomial(), data=d)
+
+ 
+TAULA<-mod1 %>% 
+ parameters::parameters(exp=T,df_method="wald") %>% as_tibble() %>% 
+  transmute(var=Parameter,OR=Coefficient,IC95_linf=CI_low,IC95_lsup=CI_high,N=nobs(mod1)) %>% 
+   filter(var!="(Intercept)")
+ 
+ 
+ }
+#
+#
+#-------------------------------------------------------------------------------------------------------------#
+
+
+#-------------------------------------------------------------------------------------------------------------#
+#
+#
+taula_coef2<-function(x="taula1",y="resposta",d=dat) {
+
+# x=vect[1]
+# y="TG.valor_CAT3b"
+# d=dades %>% filter(BLOC0=="Si")
+
+ GRUP<-formula.text2(x=x,y=y)
+
+ #mod1
+  TAULA<-tryCatch( {
+    
+    mod1<-speedglm::speedglm(formula= GRUP, family = binomial(), data=d) 
+    
+    mod1 %>% parameters::parameters(exp=T,df_method="wald") %>% as_tibble() %>% 
+          transmute(var=Parameter,OR=Coefficient,IC95_linf=CI_low,IC95_lsup=CI_high,N=nobs(mod1)) %>%
+          filter(var!="(Intercept)") }
+    , 
+    error=function(e) {tibble(var=NA,OR=NA,IC95_linf=NA,IC95_lsup=NA,N=NA)})
+    
+
+  TAULA    
+ 
+ }
+
+
+
+#
+#-------------------------------------------------------------------------------------------------------------#
+```
+
+
+```{r, eval=FALSE}
+
+# Test funcions
+
+          #BLOC0:[]
+      vect<-extreure.variables(taula="Taula00P2",taulavariables=conductor,variable_camp="camp") [1]
+            
+      vect %>% 
+          set_names(vect) %>% 
+             map_df(~taula_coef3(x=.x, y="TG.valor_CAT3b",d=dades%>%filter(BLOC0=="Si")),.id="variable_name") %>% 
+               filter(var!="sexe2. Dona")%>%
+                 filter(var!="age")%>%
+                  kable(caption="Reg logistica BLOC0 ,GREU/No_GREU ajustats Edat i Sexe",digits = 2)%>%kableExtra::kable_classic_2()    
+
+
+dades %>% select(agr_pais) %>% distinct() 
+dades %>% select(agr_pais2) %>% distinct()
+
+```
+
+
+```{r , include = FALSE}
+
+taula_coef3<-function(x="taula1",y="resposta",d=dat) {
+  
+# x=vect[1]
+# y="TG.valor_CAT3b"
+# d=dades %>% filter(BLOC0=="Si")
+ 
+ GRUP<-formula.text3(x=x,y=y)
+
+  TAULA<-tryCatch( {
+    
+    mod1<-speedglm::speedglm(formula= GRUP, family = binomial(), data=d) 
+    
+    mod1 %>% 
+          parameters::parameters(exp=T,df_method="wald") %>% as_tibble() %>% 
+          transmute(var=Parameter,OR=Coefficient,IC95_linf=CI_low,IC95_lsup=CI_high,N=nobs(mod1)) %>%
+          filter(var!="(Intercept)") 
+    
+        }
+    , 
+    error=function(e) {tibble(var=NA,OR=NA,IC95_linf=NA,IC95_lsup=NA,N=NA)})
+    
+
+  TAULA    
+ 
+ }
+#
+#
+#-------------------------------------------------------------------------------------------------------------#
+
+#-------------------------------------------------------------------------------------------------------------#
+#
+#
+logistic_coef<-function(x="taula1",y="resposta",a=" ",eliminar=c(" "),taulavariables='variables.xls',d=dat) {
+  
+ #x="Taula01"
+ #y="TG.valor_CAT3b"
+ #taulavariables='conductor_HTG.xlsx'
+ 
+ GRUP<-formula.text(x=x,y=y,taulavariables=taulavariables,eliminar=eliminar)
+ 
+ mod1<-speedglm::speedglm(formula= GRUP, family = binomial(), data=d)
+ mod1
+ 
+    }
+
+#
+#
+#-------------------------------------------------------------------------------------------------------------#
+# extreure_OR()
+# extreure_coef_glm_v2()
+# extreure_model_logistic()
+
+
+
+
+```
+
+
+
+
+
+```{r llegir, include = FALSE}
+
+#######################################################
+# Llegir plana
+dades<-readRDS(here::here(params$dir_dades_desti,"dt_plana2.rds")) %>% as_tibble()
+# Filtrem  i ELIMINEM els Difunts anteriors al 20
+#
+#
+#######################################################
+
+
+#DG.DM2
+#FF.ADO
+#FP.ADO
+#HbA1c_7
+
+
+dades<-dades%>%mutate(exclusio1=DG.Exclusion)
+dades<-dades%>%mutate(exclusio2=ifelse(dtindex==sortida & situacio!="A",1,0))
+
+
+# Filtrem:
+####################################################################################
+#dt_plana<-dt_plana%>%filter(dtindex>=params$bd.dindex & dtindex<=params$bd.dindex2)
+####################################################################################
+
+#dt_plana<-dt_plana%>%filter(stringr::str_sub(dtindex,1,4)==params$ANY)
+
+
+
+
+
+
+```
+
+```{r, results='asis'}
+
+Any_txt<-paste0("Any = ", dades$dtindex[[1]] %>% substring(1,4))
+
+cat('
+```{custom-style="heading 3"}
+Any_txt
+```')
+
+
+```
+
+
+`r Any_txt`
+
+
+```{r Flow chart, include=T, eval=FALSE}
+
+## 1. Flow chart 
+
+#flow_chart1<-criteris_exclusio_diagrama(dt=dades,
+#                                        taulavariables=conductor,
+#                                        criteris = "exc_pre",
+#                                        ordre="exc_ordre",
+#                                        grups=NA,
+#                                        etiquetes="descripcio1",
+#                                        sequencial = T,
+#                                        pob_lab=c("HTG transversal  ","HTG transversal sense exclusions"),
+#                                        colors=c("white","grey"),
+#                                        forma=c("ellipse","box"))
+
+#flow_chart1
+
+
+#kk<-dades%>%select(idp,situacio,sortida,exclusio1,exclusio2)%>%filter(situacio!="1.   Actiu")
+
+#descrTable(~ situacio+ sortida,
+#           method =1,
+#           data=kk,
+#           include.miss = TRUE,
+#           max.xlev = 200, 
+#           max.ylev = 10,
+#           show.p.overall=FALSE,
+#           show.n = T,
+#           show.all=T,
+#          hide.no="No",simplify=F)%>%export2md(header.background = "grey", header.color = "white", size=12,caption = "comprovació , les dates de SORTIDA,  han de ser superiors al Dindex, quan tenim Situació= Difunt o trasllat")
+
+
+
+ 
+
+
+print("No apliquem les EXCLUSIONS.Ho farem mes endavant")
+
+#Apliquem les EXCLUSIONS!
+#dades<-criteris_exclusio(dades,taulavariables=conductor,criteris="exc_pre")
+
+
+
+
+# pregunta-ho a Jordi.
+#year==params$bd.dindex
+#`r params$bd.dindex`
+
+#Apliquem que surtin els MISSINGS a les TAULES , a partir del CONDUCTOR!
+#dt_plana_exc<-dt_plana_exc%>%mutate_at(extreure.variables("missings",conductor,dt=dt_plana_exc),as.factor)
+
+#Etquetem  NOMS! de les  VAR  a partir del Conductor!
+
+#dades<-etiquetar(dades,taulavariables=conductor)
+
+```
+## 2. Descriptiva.
+
+
+```{r}
+
+generam_taula<-function(formula=formu_0b,dt=dades,titul="TAULA 1. Descriptiu per nivells de triglicerids",subtitul="") {
+  
+  table1::table1(formula,
+               data = dt,
+               caption=paste0(titul,subtitul),
+               render.continuous=c(.="N",.="Mean (SD)", .="Median [Q1, Q3]"),
+               render.categorical="FREQ (PCTnoNA%)",
+               topclass="Rtable1-zebra",
+               extra.col=list(`P-value`=pvalue))
+  }
+
+
+
+
+```
+
+
+
+## 3.0  TAULA 1.Prevalença  Global de TG per Sexe,Edat, i Blocs.
+```{r resultats1, include=T}
+#
+#"Analisi Descriptiu GENERAL."
+#--------------------------------------------------------------------------------------------------------------#
+table1::table1(~ TG.valor_CAT,
+               data = dades,caption="TAULA 1.Prevalença  Global de TG ",
+               render.continuous=c(.="N",.="Mean (SD)", .="Median [Q1, Q3]"),
+               render.categorical="FREQ (PCTnoNA%)",
+               topclass="Rtable1-zebra")
+#--------------------------------------------------------------------------------------------------------------#
+table1::table1(~ TG.valor_CAT2,
+               data = dades,caption="TAULA 1.Prevalença  Global de TG ",
+               render.continuous=c(.="N",.="Mean (SD)", .="Median [Q1, Q3]"),
+               render.categorical="FREQ (PCTnoNA%)",
+               topclass="Rtable1-zebra")
+#--------------------------------------------------------------------------------------------------------------#
+```
+
+
+```{r resultats1.2, include=T}
+#Taula01::formu_0b#
+#Taula01:
+#--------------------------------------------------------------------------------------------------------------#
+
+formu_0b<-formula_table1("Taula01",y="TG.valor_CAT2",taulavariables=conductor,dt=dades)
+
+generam_taula(formu_0b,dades)
+
+generam_taula(formu_0b,dades%>%filter(sexe=="1. Home"),subtitul = ". Homes")
+
+generam_taula(formu_0b,dades%>%filter(sexe=="2. Dona"),subtitul = ". Dones")
+
+
+
+
+```
+
+
+```{r resultats1.3, include=T,eval=FALSE}
+
+
+table1::table1(formu_0b,
+               data = dades,caption="TAULA 1.Prevalenca  Global de TG  ",
+               render.continuous=c(.="N",.="Mean (SD)", .="Median [Q1, Q3]"),
+               render.categorical="FREQ (PCTnoNA%)",
+               topclass="Rtable1-zebra",
+               extra.col=list(`P-value`=pvalue))
+
+#--------------------------------------------------------------------------------------------------------------#
+table1::table1(~TG.valor+age5.cat+age+BLOC0+BLOC3 | TG.valor_CAT2,
+               data = dades%>%filter(sexe=="1. Home"),caption="TAULA 1.Prevalenca  Global de TG.Homes ",
+               render.continuous=c(.="N",.="Mean (SD)", .="Median [Q1, Q3]"),
+               render.categorical="FREQ (PCTnoNA%)",
+               topclass="Rtable1-zebra",
+               extra.col=list(`P-value`=pvalue))
+
+#--------------------------------------------------------------------------------------------------------------#
+table1::table1(~TG.valor+age5.cat+age+BLOC0+BLOC3 | TG.valor_CAT2,
+               data = dades%>%filter(sexe=="2. Dona"),caption="TAULA 1.Prevalenca  Global de TG.Dones ",
+               render.continuous=c(.="N",.="Mean (SD)", .="Median [Q1, Q3]"),
+               render.categorical="FREQ (PCTnoNA%)",
+               topclass="Rtable1-zebra",
+               extra.col=list(`P-value`=pvalue))
+
+#--------------------------------------------------------------------------------------------------------------#
+
+```
+## 3.1  Descriptiva Exploratoria General/TG_CAT.
+```{r resultats2, include=T}
+#
+#"Analisi Descriptiu GENERAL."
+#
+#Taula00::formu_2b#
+
+formu_2b<-formula_table1("Taula00",y="TG.valor_CAT2",taulavariables=conductor,dt=dades)
+
+generam_taula(formu_2b,dades,titul="Descriptiva general per nivells de triglicerids")
+
+
+
+```
+
+```{r funcio_plots, include=T}
+#
+#
+
+#######################################################################################################################
+
+genera_figures_HTG<-function(dt=dades,subtitul="") {
+  
+
+    p1<-
+      ggplot(data = dt, aes(TG.valor))+
+       geom_histogram(bins = 150,aes(y =1*( ..count../sum(..count..)))) +
+        scale_y_continuous(name = "%", labels=scales::percent) +
+          labs(title=paste0("Distribució dels Triglicerids (mg/dl)"),
+               subtitle = subtitul, x ="Triglicerids (mg/dl)")+
+            scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
+             scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
+               theme_classic() +
+                xlim(0,1000) 
+    #
+    
+    p2<-ggplot(data = dt, aes(TG.valor, fill=sexe,color=sexe))+ 
+       geom_histogram(bins = 150,aes(y =1*( ..count../sum(..count..)))) +
+        # geom_density(aes(x=TG.valor,y=..density..)) + geom_density(trim=TRUE)+
+        scale_y_continuous(name = "%", labels=scales::percent) +
+           labs(title=paste0("Distribució dels Triglicerids (mg/dl) per sexe"),
+                subtitle = subtitul, x ="Triglicerids (mg/dl)")+
+            scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
+             scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
+               theme_classic() +
+                xlim(0,1000)
+    #
+    #
+    #
+    p3<-ggplot(dt, aes(TG.valor)) + 
+      geom_histogram(bins = 150,aes(y =1*( ..count../sum(..count..)))) +
+         scale_y_continuous(name = "%", labels=scales::percent)  +
+          facet_wrap(~age5.cat, scales = 'free_x')+
+          labs(title=paste0("Distribució dels Triglicerids (mg/dl) per grup d'edat"),
+               subtitle = subtitul , x ="Triglicerids (mg/dl)")+
+           theme_bw() +
+              xlim(0,1000)
+    #
+    
+    p4<-dt %>% 
+      ggplot(aes(y=TG.valor,x=age5.cat,fill=sexe,color=sexe)) +
+        geom_boxplot() + 
+          labs(title="Box-plot de la distribució dels triglicerids agrupats per sexe i edat",
+               subtitle = subtitul, y = "Triglicerids (mg/dl)", x="Grup d'edat") +
+             scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
+               scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9"))+
+                 theme_classic() +
+                  ylim(0,1000)
+    
+    list(p1,p2,p3,p4)
+
+
+}
+```
+
+
+```{r resultats3, include=T,suppress=T}
+
+genera_figures_HTG(dades,"Global")
+
+#######################################################################################################################
+
+```
+
+## 3.2  Descriptiva Exploratoria General/TG_CAT.Bloc 0.
+```{r resultats4, include=T}
+#
+#"Analisi Descriptiu GENERAL Bloc 0.Sense causes secundàries"
+#render.missing=NULL
+
+#Taula00::formu_2b#
+
+formu_2b<-formula_table1("Taula00",y="TG.valor_CAT2",taulavariables=conductor,dt=dades)
+
+#abans farem una taula , per veure si hi ha caselles BUIDES!.
+
+if (params$dir_dades_desti=="dades/mostra" & params$ANY<="2013" ) {
+
+  ###############
+
+            
+    } else {
+        #
+
+      generam_taula(formu_2b,dades%>%filter(BLOC0=="Si"),titul="Analisi Descriptiu GENERAL Bloc 0.Sense causes secundaries per nivells de TG.")
+
+
+    }
+
+
+
+```
+
+```{r resultats5, include=T,suppress=T}
+
+
+dades%>%filter(BLOC0=="Si") %>% genera_figures_HTG("BLOC 0")
+
+
+
+```
+
+## 3.3  Descriptiva Exploratoria General/TG_CAT.Bloc 1.
+```{r resultats6, include=T}
+#"Analisi Descriptiu GENERAL Bloc 1"
+
+#Taula00::formu_2b#
+
+
+formu_2b<-formula_table1("Taula00",y="TG.valor_CAT2",taulavariables=conductor,dt=dades)
+
+#abans farem una taula , per veure si hi ha caselles BUIDES!.
+
+if (params$dir_dades_desti=="dades/mostra" & params$ANY<="2013" ) {
+
+  
+  ###############
+
+            
+    } else {
+        #
+
+
+      generam_taula(formu_2b,dades%>%filter(BLOC1=="Si"),titul="Analisi Descriptiu GENERAL Bloc 1.Sense causes secundaries per nivells de TG.")
+
+
+    }
+
+
+
+```
+
+```{r resultats7, include=T,suppress=T}
+
+
+
+dades%>%filter(BLOC1=="Si") %>% genera_figures_HTG("BLOC 1")
+
+
+
+```
+
+## 3.4  Descriptiva Exploratoria General/TG_CAT.Bloc 2.
+```{r resultats8, include=T}
+#
+#"Analisi Descriptiu GENERAL Bloc 2"
+
+
+formu_2b<-formula_table1("Taula00",y="TG.valor_CAT2",taulavariables=conductor,dt=dades)
+
+
+generam_taula(formu_2b,dades%>%filter(BLOC2=="Si"),titul="Analisi Descriptiu GENERAL Bloc 2.Sense causes secundaries per nivells de TG.")
+
+
+```
+
+```{r resultats9, include=T,suppress=T}
+
+
+dades%>%filter(BLOC2=="Si") %>% genera_figures_HTG("BLOC 2")
+
+
+
+```
+
+## 3.5  Descriptiva Exploratoria General/TG_CAT.Bloc 3.Causes Secundaries.
+```{r resultats10, include=T}
+#
+#"Analisi Descriptiu GENERAL.Causes Secundaries"
+
+#Taula00::formu_2b#
+
+generam_taula(formu_2b,dades%>%filter(BLOC3=="Si"),titul="Analisi Descriptiu GENERAL Bloc 3.Sense causes secundaries per nivells de TG.")
+
+
+```
+
+```{r resultats11, include=T,suppress=T}
+
+
+dades%>%filter(BLOC3=="Si") %>% genera_figures_HTG("BLOC 3")
+
+
+
+```
+
+## 3.6  Descriptiva Exploratoria HTG  per  Blocs.Comprovació de les variables. 
+```{r resultats12, include=T}
+#
+# Analisi Descriptiu GENERAL.Causes Secundaries i Blocs #
+#
+#
+#
+#Taula_bloc::formu_3#
+
+formu_3<-formula_table1("Taula_bloc",y="",taulavariables=conductor,dt=dades)
+
+table1::table1(formu_3,
+               data = dades%>%filter(BLOC0=="Si"),caption="Analisi Descriptiu GENERAL Bloc 0.Sense causes secundaries per TG.",
+               render.continuous=c(.="N",.="Mean (SD)", .="Median [Q1, Q3]"),
+               render.categorical="FREQ (PCTnoNA%)",
+               topclass="Rtable1-zebra")
+
+table1::table1(formu_3,
+               data = dades%>%filter(BLOC1=="Si"),caption="Analisi Descriptiu GENERAL Bloc 1 per TG.",
+               render.continuous=c(.="N",.="Mean (SD)", .="Median [Q1, Q3]"),
+               render.categorical="FREQ (PCTnoNA%)",
+               topclass="Rtable1-zebra")
+
+table1::table1(formu_3,
+               data = dades%>%filter(BLOC2=="Si"),caption="Analisi Descriptiu GENERAL Bloc 2 per TG.",
+               render.continuous=c(.="N",.="Mean (SD)", .="Median [Q1, Q3]"),
+               render.categorical="FREQ (PCTnoNA%)",
+               topclass="Rtable1-zebra")
+
+
+table1::table1(formu_3,
+               data = dades%>%filter(BLOC3=="Si"),caption="Analisi Descriptiu GENERAL.Bloc 3.Causes Secundaries per TG.",
+               render.continuous=c(.="N",.="Mean (SD)", .="Median [Q1, Q3]"),
+               render.categorical="FREQ (PCTnoNA%)",
+               topclass="Rtable1-zebra")
+
+
+```
+
+## 3.7  Taules amb l'Outcome : TG.valor_CAT3. 
+```{r resultats13, include=T}
+
+
+
+  formu_3f<-formula_table1("Taula00P",y="TG.valor_CAT3",taulavariables=conductor,dt=dades,eliminar=c("TG.valor","TG.valor_CAT"))
+
+  generam_taula(formu_3f,dades,titul="Analisi Descriptiu GENERAL per nivells de TG.")
+  
+  
+  
+  #ajustBloc1::formu_3b#
+ formu_3b<-formula_table1("ajustBloc1",y="TG.valor_CAT3",taulavariables=conductor,dt=dades,eliminar=c("TG.valor","TG.valor_CAT"))
+ 
+ generam_taula(formu_3b,dades%>%filter(BLOC1=="Si"),titul="Analisi Descriptiu GENERAL.TG Greu/ No Greu i Bloc 1.Causes Secundaries per TG.")
+  
+
+ #ajustBloc2::formu_3c#
+ 
+  formu_3c<-formula_table1("ajustBloc2",y="TG.valor_CAT3",taulavariables=conductor,dt=dades,eliminar=c("TG.valor","TG.valor_CAT"))
+ 
+  generam_taula(formu_3c,dades%>%filter(BLOC2=="Si"),titul="Analisi Descriptiu GENERAL.TG Greu/ No Greu i Bloc 2.Causes Secundaries per TG")
+  
+
+   #ajustBloc3::formu_3d#
+  
+  formu_3d<-formula_table1("ajustBloc3",y="TG.valor_CAT3",taulavariables=conductor,dt=dades,eliminar=c("TG.valor","TG.valor_CAT"))
+  generam_taula(formu_3d,dades%>%filter(BLOC3=="Si"),titul="Analisi Descriptiu GENERAL.TG Greu/ No Greu i Bloc 3.Causes Secundaries per TG.")
+  
+
+#abans farem una taula , per veure si hi ha caselles BUIDES!.
+
+if (params$dir_dades_desti=="dades/mostra" & params$ANY!="2019" ) {
+
+  #Taula00P::formu_3f#
+   
+            
+    } else {
+        #
+      
+      
+         #Taula00P2::formu_3f2#
+
+         formu_3f2<-formula_table1("Taula00P2",y="TG.valor_CAT3",taulavariables=conductor,dt=dades,eliminar=c("TG.valor","TG.valor_CAT"))
+      
+         generam_taula(formu_3f2,dades%>%filter(BLOC0=="Si"),titul="Analisi Descriptiu GENERAL.TG Greu/ No Greu i Bloc 0.Sense Causes Secundaries per TG.")
+       
+      
+
+    }
+
+
+```
+
+## 3.8  Taules  OR amb l'Outcome : TG.valor_CAT3. 
+
+
+
+```{r resultats14, include=T,warning = FALSE}
+
+#poblacio i mostra :[]
+
+   
+            
+            #poblacio:[]
+            vect<-extreure.variables(taula="Taula00P",taulavariables=conductor,variable_camp="camp")[1:3]
+            
+            vect %>% 
+                set_names(vect) %>%
+                  map_df(~taula_coef2(x=.x, y="TG.valor_CAT3b", d=dades),.id = "variable_name")%>%
+                    mutate_at(vars(c(OR,IC95_linf,IC95_lsup)), ~ifelse(.>500,"+500",as.character(round(.,3)))) %>% 
+                      etiquetar_taula(camp = "variable_name",camp_descripcio="descripcio1",taulavariables = conductor) %>% 
+                        kable(caption="Reg logistica ,GREU/No_GREU",digits = 2) %>% kableExtra::kable_classic_2() 
+
+            #BLOC0:[]
+            vect<-extreure.variables(taula="Taula00P2",taulavariables=conductor,variable_camp="camp")
+            
+            vect %>% 
+              set_names(vect) %>% 
+                map_df(~taula_coef2(x=.x, y="TG.valor_CAT3b",d=dades%>%filter(BLOC0=="Si")),.id="variable_name")%>%
+                  mutate_at(vars(c(OR,IC95_linf,IC95_lsup)), ~ifelse(.>500,"+500",as.character(round(.,3)))) %>% 
+                    etiquetar_taula(camp = "variable_name",camp_descripcio="descripcio1",taulavariables = conductor) %>% 
+                       kable(caption="Reg logistica BLOC0 ,GREU/No_GREU",digits = 2)%>%kableExtra::kable_classic_2() 
+
+    
+
+
+
+```
+
+
+## 3.9  Taules  OR amb l'Outcome : TG.valor_CAT3. ajustat Edat i Sexe.
+
+```{r resultats15, include=T}
+
+#poblacio i mostra :[]
+
+
+            vect<-extreure.variables(taula="Taula00P",taulavariables=conductor,variable_camp="camp")
+            
+            vect %>% 
+              set_names(vect) %>%
+                map_df(~taula_coef3(x=.x, y="TG.valor_CAT3b", d=dades),.id = "variable_name")%>% 
+                 filter(var!="sexe2. Dona")%>%
+                  filter(var!="age")%>%
+                    mutate_at(vars(c(OR,IC95_linf,IC95_lsup)), ~ifelse(.>500,"+500",as.character(round(.,3)))) %>% 
+                      etiquetar_taula(camp = "variable_name",camp_descripcio="descripcio1",taulavariables = conductor) %>% 
+                        kable(caption="Reg logistica ,GREU/No_GREU ajustats Edat i Sexe",digits = 2) %>%
+                          kableExtra::kable_classic_2()    
+
+            
+            #BLOC0:[]
+            vect<-extreure.variables(taula="Taula00P2",taulavariables=conductor,variable_camp="camp")%>%as.vector()
+            
+            vect %>% 
+              set_names(vect) %>% 
+               map_df(~taula_coef3(x=.x, y="TG.valor_CAT3b",d=dades%>%filter(BLOC0=="Si")),.id="variable_name") %>% 
+                filter(var!="sexe2. Dona")%>%
+                 filter(var!="age")%>%
+                  mutate_at(vars(c(OR,IC95_linf,IC95_lsup)), ~ifelse(.>500,"+500",as.character(round(.,3)))) %>% 
+                    etiquetar_taula(camp = "variable_name",camp_descripcio="descripcio1",taulavariables = conductor) %>% 
+                      kable(caption="Reg logistica BLOC0 ,GREU/No_GREU ajustats Edat i Sexe",digits = 2) %>%
+                        kableExtra::kable_classic_2()    
+
+    
+
+
+```
+
+
+
+## 3.10  Taules  OR amb l'Outcome : BLOCS
+
+```{r resultats16, include=T}
+
+
+# Model 1            
+fit<-formula.text("ajustBloc1c",y="TG.valor_CAT3b",taulavariables = conductor) %>% 
+      glm(family = "binomial",data=dades%>%filter(BLOC1=="Si"))
+
+fit %>% sjPlot::tab_model(show.p = F, title = "Reg logistica BLOC1. Edat_Categ.,GREU/No_GREU",show.intercept = F,df.method = "wald")
+
+## Model 2
+
+fit<-formula.text("ajustBloc2c",y="TG.valor_CAT3b",taulavariables = conductor) %>% 
+      glm(family = "binomial",data=dades%>%filter(BLOC2=="Si"))
+  
+fit %>% sjPlot::tab_model(show.p = F, title = "Reg logistica BLOC2. Edat_Categ.,GREU/No_GREU",show.intercept = F,df.method = "wald")
+
+
+## Model 3
+
+fit<-formula.text("ajustBloc3c",y="TG.valor_CAT3b",taulavariables = conductor) %>% 
+      glm(family = "binomial",data=dades%>%filter(BLOC3=="Si"))
+  
+fit %>% sjPlot::tab_model(show.p = F, title = "Reg logistica BLOC3. Edat_Categ.,GREU/No_GREU",show.intercept = F,df.method = "wald")
+
+
+```
+
+
+
+
+```{r salvar}
+
+## 4. Salvar taula plana
+
+saveRDS(dades, file=here::here(params$dir_dades_desti,"dt_plana_exc.rds"))
+
+```
+&nbsp;
+<hr />
+<p style="text-align: center;">A work by $Jordi Real$ $Rai Puig$ </a></p>
+<p style="text-align: center;">$Llepali System$ </a></p>
+<p style="text-align: center;"><span style="color: #808080;"><em><https://github.com/USR-DAPCAT/></em></span></p>
+
+
+
