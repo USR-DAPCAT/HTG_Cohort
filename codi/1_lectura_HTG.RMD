@@ -265,44 +265,27 @@ Criteris d'inclusió
 
 ```{r genero_dt_index}
 
+# Primera Determinació de TG 
+
 ##############
 #[03.05.2022]#
 ##############
 
-dt_temp<-
-  dt_analitiques %>% filter(cod=="TG" &  val>=500) %>% 
+dt_index<-
+  dt_analitiques %>% filter(cod=="TG") %>% 
   group_by(idp) %>% 
     slice(which.min(dat)) %>% 
   ungroup() %>% 
    select(idp,dtindex=dat) 
    
 
-
-#
-#  
-
-
-#dt_temp<-
-#  dt_analitiques %>% filter(cod=="TG") %>% 
-#  mutate(year=stringr::str_sub(dat,1,4)) %>% 
-#  group_by(idp,year) %>% 
-#    slice(which.max(val)) %>% 
-#  ungroup() %>% 
-#  select(idp,dtindex=dat) 
-
-
-dt_temp<-dt_temp %>% filter(dtindex>=params$bd.dindex1 & dtindex<=params$bd.dindex2)
-
-
-
-
-dt_index<-dt_poblacio %>% 
-  semi_join(dt_temp,by="idp") %>% 
-  select(idp,entrada,sortida) %>% 
-  left_join(dt_temp,by="idp") %>% 
-  filter(entrada<=dtindex & dtindex<sortida)  %>%  # Filtro per usuari actiu en data index
-  filter(ymd(dtindex)-ymd(entrada)>=365)  %>%  # Filtro per usuaris antiguetat d'un any mínim
-  select(-c(entrada,sortida))
+# dt_index<-dt_poblacio %>% 
+#   semi_join(dt_temp,by="idp") %>% 
+#   select(idp,entrada,sortida) %>% 
+#   left_join(dt_temp,by="idp") %>% 
+#   filter(entrada<=dtindex & dtindex<sortida)  %>%  # Filtro per usuari actiu en data index
+#   filter(ymd(dtindex)-ymd(entrada)>=365)  %>%  # Filtro per usuaris antiguetat d'un any mínim
+#   select(-c(entrada,sortida))
 
 
 # 
@@ -330,7 +313,7 @@ dt_cliniques<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_var
 
 #[xii,xiii]
 ###########################################################################################  
-dt_variables<-dt_analitiques%>% bind_rows(dt_cliniques) %>% select(-rimap,-agr) %>% 
+dt_variables<-dt_analitiques%>% bind_rows(dt_cliniques) %>% select(-rimap,-agr) %>% filter(!is.na(cod)) %>% 
   semi_join(dt_index,by="idp")
 ########################################################################################### 
 
@@ -450,6 +433,7 @@ gc()
 
 
 
+
 ```{r agregacio1, include=F}
 # 2.1 agregacio dt_cartilla_sanitaria -----------
 #[bd.dindex = params$bd.dindex]
@@ -519,7 +503,7 @@ dtagr_diagnostics_HTG2<-agregar_problemes(select(dt_diagnostics_AP_HOSP,idp,cod,
 
 
 dt_temp<-cataleg_BOG %>% 
-  filter(domini %in% c("farmacs facturats","farmacs prescrits")) %>% 
+  filter(domini %in% c("farmacs_facturats","farmacs_prescrits")) %>% 
   select(cod=cod,agr=agr)
 
 
@@ -693,16 +677,15 @@ dtagr_variables_HTG<-dtagr_variables_HTG%>%select(-dtindex)
 ```{r fusio2,include=F}
 
 
-dt_parametres<-read_excel(here::here(conductor_codis2),sheet = "parametres")
-dt_parametres
+dt_temp<-Generar_taula_plana(dt=dt_index, cataleg = conductor_codis2,parametres = conductor_codis2, sheet="parametres")
 
-dt_temp<-Generar_taula_plana(dt_index,cataleg = conductor_codis2,parametres = dt_parametres)%>%select(-dtindex)
+dt_plana2<- dt_index %>% 
+  left_join(dt_poblacio,by="idp") %>% 
+  left_join(dtagr_geosanitaries_HTG,by="idp") %>% 
+  left_join(dtagr_socioeconomiques_HTG,by="idp")%>%
+  left_join(dtagr_embaras_HTG,by="idp") %>% 
+  left_join(dt_temp,by=c("idp","dtindex"))
 
-
-
-dt_plana2<-dt_index%>%
-left_join(dt_poblacio,by="idp")%>%
- left_join(dt_temp,by=c('idp'))
 
 ```
 
@@ -731,8 +714,11 @@ dt_plana<-dt_index%>%
                    left_join(dtagr_socioeconomiques_HTG,by="idp")%>%
                     left_join(dtagr_embaras_HTG,by="idp")
   
-  
 
+
+
+
+names(dt_plana)[!names(dt_plana)%in%names(dt_plana2)]
 
 ```
 
