@@ -72,6 +72,8 @@ directori_dades_origen<-params$dir_dades_origen
 
 #
 
+
+
 cataleg_BOG<-readxl::read_excel(conductor_codis2,col_types = "text")
 
 
