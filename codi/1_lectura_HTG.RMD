@@ -54,25 +54,9 @@ library(lubridate)
 # Funcions 
 link_source<-paste0("https://github.com/jrealgatius/Stat_codis/blob/master/funcions_propies.R","?raw=T")
 devtools::source_url(link_source)
-
-#conductor_codis<-here::here("codis_peucat.xlsx")
-
-#[17.8.2021]
-# conductor_codis<-here::here("Cataleg_HTG.xlsx")
-#conductor_codis3<-here::here("Projecte_HTCPANCR_2021-04-09_00_32_25.xlsx")
 conductor_codis2<-here::here("Cataleg_HTG_BIG.xlsx")
-#
-#
-#
-#
+
 directori_dades_origen<-params$dir_dades_origen
-#   template: template.html
-#
-#############################################################################################################
-
-#
-
-
 
 cataleg_BOG<-readxl::read_excel(conductor_codis2,col_types = "text")
 
@@ -145,89 +129,10 @@ KK
 # 1 Lectura -----------
 
 
-#MUNTEM EL CATÁLEG !!! S'ha de fer amb TOTA LA POBLACIÓ,  així agafarem TOTS ELS CODIS!!!
-
-
-#i)
-#dt_cmbdh_diagnostics_b<-dt_cmbdh_diagnostics%>%select(cod,agr)%>%group_by(cod)%>%dplyr::slice(1)%>%ungroup()
-#ii)
-#dt_diagnostics_b<-dt_diagnostics%>%select(cod,agr)%>%group_by(cod)%>%dplyr::slice(1)%>%ungroup()
-#iii)
-#dt_entregable_cmbdh_procediments_b<-dt_entregable_cmbdh_procediments%>%select(cod,agr)%>%group_by(cod)%>%dplyr::slice(1)%>%ungroup()
-#iv)
-#dt_farmacs_facturats_b<-dt_farmacs_facturats%>%select(cod,agr)%>%group_by(cod)%>%dplyr::slice(1)%>%ungroup()
-#v)
-#dt_farmacs_prescrits_b<-dt_farmacs_prescrits%>%select(cod,agr)%>%group_by(cod)%>%dplyr::slice(1)%>%ungroup()
-
-
-
-#i)
-#write.csv(dt_cmbdh_diagnostics_b, file="dt_cmbdh_diagnostics_b.csv")
-#ii)
-#write.csv(dt_diagnostics_b, file="dt_diagnostics_b.csv")
-#iii)
-#write.csv(dt_entregable_cmbdh_procediments_b, file="dt_entregable_cmbdh_procediments_b.csv")
-#iv)
-#write.csv(dt_farmacs_facturats_b, file="dt_farmacs_facturats_b.csv")
-#v)
-#write.csv(dt_farmacs_prescrits_b, file="dt_farmacs_prescrits_b.csv")
-
-# MUNTEM EL CATÀLEG DEL NOSTRE ESTUDI, AMB EL nom de cataleg!
-
-
-#[CODIS estudi actual]
-#cataleg
-
-#[CODIS TOTALS]
-#cataleg_BOG
-
-
-#17.02.2021#
-# cataleg<-readxl::read_excel(conductor_codis,col_types = "text")
-
-
 
 cataleg_BOG<-readxl::read_excel(conductor_codis2,col_types = "text")
 
-#cataleg
-#cataleg_BOG
 
-
-#comp_cat<-compar_catal(dt1=cataleg,dt2=cataleg_BOG)
-
-
-
-#comp_cat
-
-
-################
-#   cod    sel##  
-#   <chr>  <chr>
-#01 E78    ERROR
-#02 E78.0  ERROR
-#03 E78.00 ERROR
-#04 E78.01 ERROR
-#05 E78.41 ERROR
-#06 E78.49 ERROR
-#07 E78.6  ERROR
-#08 E78.70 ERROR
-#09 E78.72 ERROR
-#10 E78.79 ERROR
-#11 E78.81 ERROR
-#12 E78.89 ERROR
-#13 E78.9  ERROR
-################
-
-#rectificat!!
-
-
-########################################################################
-#
-#
-#
-#
-#
-#
 ```
 
 
@@ -419,9 +324,6 @@ dt_diagnostics_AP_HOSP<-dt_diagnostics%>%transmute(idp,cod=as.character(cod),dat
   bind_rows(select(dt_entregable_cmbdh_procediments,idp,cod,dat,agr))
 ###########################################################################################  
 
- 
-
-
 
 ```
 
@@ -464,10 +366,6 @@ dtagr_diagnostics_HTG<-agregar_problemes(select(dt_diagnostics_AP_HOSP,idp,cod,d
                                            dt.agregadors=dt_temp,
                                            finestra.dies=c(-Inf,0),prefix = "DG.",cataleg_mana = T) 
 
-
-
-
-
 ```
 
 ```{r agregacio3, include=F}
@@ -483,11 +381,6 @@ dtagr_diagnostics_HTG2<-agregar_problemes(select(dt_diagnostics_AP_HOSP,idp,cod,
                                            bd.dindex = dt_index,
                                            dt.agregadors=dt_temp,
                                            finestra.dies=c(1,Inf),prefix = "EVENT.",cataleg_mana = T) 
-
-
-
-
-
 
 
 ```
@@ -539,25 +432,7 @@ dtagr_facturat_HTG<-
   agregar_data=F,
   cataleg_mana = T)    
 
-# 
-# 
-# dtagr_facturat_HTG<-agregar_facturacio(
-#   dt=dt_farmacs_facturats,
-#   bd.dindex=params$bd.dindex1,
-#   finestra.dies=c(-Inf,0),
-#   dt.agregadors=select(cataleg_BOG,cod=Codi,agr=Agr),
-#   prefix="FF.",
-#   camp_agregador="agr",
-#   agregar_data=T)    
 
-  
-#ADO[CATÀLEG!!]
-
-#DM_ CAT_si	1	[E11 y/o ADO y/o HbA1c>7]
-
-
-#FP.ADO 
-#FF.ADO
 
 ```
 
@@ -641,15 +516,9 @@ dtagr_embaras_HTG<-dt_diagnostics_AP_HOSP%>%filter(agr=="EMBARAZO")%>%arrange(id
 ```{r BUSQUEM Diabetis}
 #############################################################################################
 #                   B U S C A R     mínima data per EMARAZO!                                            
-
-
+#
 #DM_ CAT_si	1	[E11 y/o ADO y/o HbA1c>7]
-
-
-
-
-
-
+#
 #
 #############################################################################################
 
@@ -674,32 +543,11 @@ dtagr_variables_HTG<-dtagr_variables_HTG%>%select(-dtindex)
 
 ```
 
-
-## 4. Fusion de datos[amb la gran FUNCIO.]
-```{r fusio2,include=F}
-
-
-dt_temp<-Generar_taula_plana(dt=dt_index, cataleg = conductor_codis2,parametres = conductor_codis2, sheet="parametres")
-
-dt_plana2<- dt_index %>% 
-  left_join(dt_poblacio,by="idp") %>% 
-  left_join(dtagr_geosanitaries_HTG,by="idp") %>% 
-  left_join(dtagr_socioeconomiques_HTG,by="idp")%>%
-  left_join(dtagr_embaras_HTG,by="idp") %>% 
-  left_join(dt_temp,by=c("idp","dtindex"))
-
-
-```
-
-
-
 ## 5. Fusio 1
 
 Fusionar part dels arxius agregats 
  
 ```{r fusio1}
-
-
 
 
 dt_plana<-dt_index%>%
@@ -717,16 +565,12 @@ dt_plana<-dt_index%>%
                     left_join(dtagr_embaras_HTG,by="idp")
   
 
-
-
-
-names(dt_plana)[!names(dt_plana)%in%names(dt_plana2)]
-
 ```
 
 ## 5. Salvar part1 
 ```{r SALVAR}
 saveRDS(dt_plana, file=here::here(params$dir_dades_desti,"dt_plana.rds"))
+
 
 ```
 
