@@ -184,7 +184,7 @@ dt_index<-
     slice(which.min(dat)) %>% 
       ungroup() %>% 
         select(idp,dtindex=dat) %>% 
-          filter(dtindex>='20080101' & dtindex<='20181231')
+          filter(dtindex>=params$bd.dindex1 & dtindex<=params$bd.dindex2)
 
 
 
