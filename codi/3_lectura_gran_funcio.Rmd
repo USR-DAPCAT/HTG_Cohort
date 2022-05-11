@@ -55,9 +55,7 @@ library(lubridate)
 link_source<-paste0("https://github.com/jrealgatius/Stat_codis/blob/master/funcions_propies.R","?raw=T")
 devtools::source_url(link_source)
 conductor_codis2<-here::here("Cataleg_HTG_BIG.xlsx")
-
 directori_dades_origen<-params$dir_dades_origen
-
 cataleg_BOG<-readxl::read_excel(conductor_codis2,col_types = "text")
 
 
@@ -129,7 +127,6 @@ KK
 # 1 Lectura -----------
 
 
-
 cataleg_BOG<-readxl::read_excel(conductor_codis2,col_types = "text")
 
 
@@ -142,10 +139,8 @@ cataleg_BOG<-readxl::read_excel(conductor_codis2,col_types = "text")
 dt_poblacio<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_poblacio_20210701_235119.rds")) %>% as_tibble()
 #variable.names(dt_poblacio)
 #[1] "idp"      "sexe"     "situacio" "dnaix"    "entrada"  "sortida"  "agr_pais"
-dt_temp<-dt_poblacio
-
-
-
+#
+#
 #xii[pluri]
 dt_analitiques<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_variables_analitiques_20210701_235119.rds")) %>% as_tibble()
 #variable.names(dt_analitiques)
@@ -168,48 +163,21 @@ Criteris d'inclusió
 ●	Tener como mínimo una determinación de triglicéridos 
 
 
-
-
 ```{r genero_dt_index}
 
 # Primera Determinació de TG , i què el dtindex>='20080101' & dtindex<='20181231'
 
 ##############
-#[03.05.2022]#
+#[05.05.2022]#
 ##############
 
 dt_index<-
   dt_analitiques %>% filter(cod=="TG") %>% 
-  group_by(idp) %>% 
-    slice(which.min(dat)) %>% 
-      ungroup() %>% 
-        select(idp,dtindex=dat) %>% 
-          filter(dtindex>='20080101' & dtindex<='20181231')
-
-
-
-
-          
-  
-
-# dt_index<-dt_poblacio %>% 
-#   semi_join(dt_temp,by="idp") %>% 
-#   select(idp,entrada,sortida) %>% 
-#   left_join(dt_temp,by="idp") %>% 
-#   filter(entrada<=dtindex & dtindex<sortida)  %>%  # Filtro per usuari actiu en data index
-#   filter(ymd(dtindex)-ymd(entrada)>=365)  %>%  # Filtro per usuaris antiguetat d'un any mínim
-#   select(-c(entrada,sortida))
-
-
-# 
-# dt_index<-
-#   dt_poblacio %>% select(idp,entrada,sortida) %>% mutate(kk=1) %>%
-#   left_join(tibble(dtindex=seq(params$bd.dindex1,params$bd.dindex2,by=5000),kk=1),by="kk") %>%
-#   filter(entrada<=dtindex & dtindex<=sortida)  %>%  # Filtro per usuari actiu en data index
-#   select(-c(kk,entrada,sortida))
-
-gc()
-
+    group_by(idp) %>% 
+      slice(which.min(dat)) %>% 
+        ungroup() %>% 
+          select(idp,dtindex=dat)%>% 
+          filter(dtindex>='20080101' & dtindex<='20181231') 
 
 ```
 
@@ -218,8 +186,10 @@ gc()
 
 
 #xiii[pluri]
-dt_cliniques<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_variables_cliniques_20210701_235119.rds")) %>% as_tibble() %>% 
-  semi_join(dt_index,by="idp")
+dt_cliniques<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_variables_cliniques_20210701_235119.rds")) %>% 
+  as_tibble() %>% 
+     semi_join(dt_index,by="idp")
+
 #variable.names(dt_cliniques)
 #[1] "idp" "cod" "agr" "dat" "val"
 
@@ -292,7 +262,7 @@ dt_fitxa_diabetic<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregabl
 
 #x[pluri]
 dt_tabaquisme<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_tabaquisme_20210701_235119.rds")) %>% as_tibble()  %>% 
-  semi_join(dt_index,by="idp")
+  semi_join(dt_index,by="idp") %>% transmute(idp,cod="tabac",dat,val)
 #variable.names(dt_tabaquisme)
 #[1] "idp"    "dat"    "dbaixa" "val"  
 
@@ -327,256 +297,59 @@ dt_socioeconomiques<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entrega
 #
 dt_diagnostics_AP_HOSP<-dt_diagnostics%>%transmute(idp,cod=as.character(cod),dat,agr)%>%
   bind_rows(select(dt_cmbdh_diagnostics,idp,cod,dat,agr))%>%
-  bind_rows(select(dt_entregable_cmbdh_procediments,idp,cod,dat,agr))
+    bind_rows(select(dt_entregable_cmbdh_procediments,idp,cod,dat,agr))
 ###########################################################################################  
 
-
-```
-
-```{r netejar_fitxers}
-
-rm(dt_diagnostics,dt_cmbdh_diagnostics,dt_entregable_cmbdh_procediments,dt_analitiques,dt_cliniques)
-gc()
-
-```
-
-
-
-
-
-```{r agregacio1, include=F}
-# 2.1 agregacio dt_cartilla_sanitaria -----------
-#[bd.dindex = params$bd.dindex]
-
-dtagr_cartilla_sanitaria_HTG<-dt_cartilla_sanitaria
-
-```
-
-```{r agregacio2, include=F}
-# 2.2 agregacio Problemes de salut -----------
-
-
-# Genero cataleg
-#dt_temp<-cataleg_BOG %>% 
-#  filter(Domini2%in% c("CMBDH Diagnòstics ICS","Diagnòstics","CMBDH Procediments ICS CIM10SCP","CMBDH Procediments ICS CIM9SCP")) %>% 
-#    select(cod=Codi,agr=Agr)
-
-
-dt_temp<-cataleg_BOG %>% 
-  filter(domini%in% c("cmbdh_procediments","cmbdh_diagnostics","diagnostics")) %>% 
-    select(cod=cod,agr=agr)
-
-
-dtagr_diagnostics_HTG<-agregar_problemes(select(dt_diagnostics_AP_HOSP,idp,cod,dat),
-                                           bd.dindex = dt_index,
-                                           dt.agregadors=dt_temp,
-                                           finestra.dies=c(-Inf,0),prefix = "DG.",cataleg_mana = T) 
-
-```
-
-```{r agregacio3, include=F}
-# 2.3 agregacio EVENTS Problemes de salut -----------
-
-
-# Genero cataleg
-dt_temp<-cataleg_BOG %>% 
-  filter(domini%in% c("cmbdh_procediments","cmbdh_diagnostics","diagnostics")) %>% 
-    select(cod=cod,agr=agr)
-
-dtagr_diagnostics_HTG2<-agregar_problemes(select(dt_diagnostics_AP_HOSP,idp,cod,dat),
-                                           bd.dindex = dt_index,
-                                           dt.agregadors=dt_temp,
-                                           finestra.dies=c(1,Inf),prefix = "EVENT.",cataleg_mana = T) 
-
-
-```
-
-```{r agregacio4, include=F}
-# 2.4 agregacio dt_farmacs_facturats +dt_farmacs_prescrits -----------
-#[bd.dindex = params$bd.dindex]
-
-# agreguem , a partir del catàleg(Agr) , Farm.Prescrips - des del dia index , fins -inf.[valor més proper].
-
-# Genero cataleg
-#dt_temp<-cataleg_BOG %>% 
-#  filter(Domini %in% c("Fàrmacs facturats","Fàrmacs prescrits")) %>% 
-#  select(cod=Codi,agr=Agr)
-
-
-dt_temp<-cataleg_BOG %>% 
-  filter(domini %in% c("farmacs_facturats","farmacs_prescrits")) %>% 
-  select(cod=cod,agr=agr)
-
-
-
-#[-30,+30]
-# Prescripció activa en data index
-dtagr_prescrip_HTG<-agregar_prescripcions(
-  dt=dt_farmacs_prescrits,
-  dt.agregadors=dt_temp,
-  prefix="FP.",
-  bd.dindex=dt_index,
-  finestra.dies=c(-30,+30),
-  camp_agregador="agr",
-  agregar_data=F,cataleg_mana = T) 
-
-#######################################################################################
-# Facturació pendent de CODIS / AGREGADORS 
-dt_farmacs_facturats<-dt_farmacs_facturats%>% transmute(idp,cod,dat,env)
-#######################################################################################
-
-#[-365,+30]
-# agreguem , a partir del catàleg(Agr) , Farm.Facturats ,des del dia index , fins -inf.[valor més proper].
-dtagr_facturat_HTG<-
-  dtagr_facturat_HTG<-agregar_facturacio(
-  dt=dt_farmacs_facturats,
-  bd.dindex=dt_index,
-  finestra.dies=c(-365,+30),
-  dt.agregadors=dt_temp,
-  prefix="FF.",
-  camp_agregador="agr",
-  agregar_data=F,
-  cataleg_mana = T)    
-
-
-
-```
-
-
-
-
-```{r agregacio5, include=F}
-## 2.5 Tabaquisme -----------
-#[bd.dindex = params$bd.dindex]
-
-# agreguem  , tabac, - des del dia index , fins -inf.[valor més proper].
-
-
-dt_tabaquisme<-dt_tabaquisme%>% transmute(idp,cod="tabac",dat,val)
-dtagr_tabaquisme_HTG<-agregar_analitiques(dt=dt_tabaquisme,bd.dindex=dt_index,finestra.dies = c(-Inf,0))
-
-
-
-```
-
-```{r agregacio6, include=F}
-## 2.6 analitiques+cliniques -----------
-#[bd.dindex = params$bd.dindex]
-
-# agreguem , analitiques+cliniques - des del dia index , fins -365 dies.[valor més proper].
-# agreguem , TG.valor - des del dia index , fins -365 dies.[valor màxim]
-
-dtagr_variables_HTG<-agregar_analitiques(dt=dt_variables %>% filter (cod!="TG"),
-                                         bd.dindex=dt_index,finestra.dies = c(-365,+30)) 
-
-dtagr_variables_HTG2<-agregar_analitiques(dt=dt_variables %>% filter (cod=="TG"),
-                                          bd.dindex=dt_index,finestra.dies = c(-365,0))
-
-
-```
-
-```{r agregacio7, include=F}
-## 2.7 geosanitaries -----------
-#[bd.dindex = params$bd.dindex]
-
-dtagr_geosanitaries_HTG<-dt_geosanitaries
-
-```
-
-```{r agregacio8, include=F}
-## 2.8  socioeconomiques -----------
-#[bd.dindex = params$bd.dindex]
-
-dtagr_socioeconomiques_HTG<-dt_socioeconomiques
-
-```
-
-
-
-```{r BUSQUEM tg}
-#############################################################################################
-#                   B U S C A R     TG                                             
-
-dtagr_TG<-dtagr_variables_HTG2
-
-# dtagr_TG<-dtagr_TG%>%mutate(TG_VAR=ifelse(is.na(TG.valor) ,"No","Si"))
-
-#
-#############################################################################################
-
-```
-
-```{r BUSQUEM embaras}
-#############################################################################################
-#                   B U S C A R     mínima data per EMARAZO!                                            
-
-dtagr_embaras_HTG<-dt_diagnostics_AP_HOSP%>%filter(agr=="EMBARAZO")%>%arrange(idp)%>%
+ dtagr_embaras_HTG<-dt_diagnostics_AP_HOSP%>%filter(agr=="EMBARAZO")%>%arrange(idp)%>%
   group_by(idp)%>%summarise(data_emb=min(dat)) %>% ungroup()
 
 
-#
-#############################################################################################
+dtagr_geosanitaries_HTG<-dt_geosanitaries
 
-```
+dtagr_socioeconomiques_HTG<-dt_socioeconomiques
 
-```{r BUSQUEM Diabetis}
-#############################################################################################
-#                   B U S C A R     mínima data per EMARAZO!                                            
-#
-#DM_ CAT_si	1	[E11 y/o ADO y/o HbA1c>7]
-#
-#
-#############################################################################################
 
-```
-
-```{r taulaPlana}
-
-#dt_index
-#dtagr_TG
-#dt_poblacio
-#dtagr_cartilla_sanitaria_HTG
-#dtagr_geosanitaries_HTG
-#dtagr_socioeconomiques_HTG
-dtagr_diagnostics_HTG<-dtagr_diagnostics_HTG%>%select(-dtindex)
-dtagr_diagnostics_HTG2<-dtagr_diagnostics_HTG2%>%select(-dtindex)
-dtagr_prescrip_HTG<-dtagr_prescrip_HTG%>%select(-dtindex)
-dtagr_facturat_HTG<-dtagr_facturat_HTG%>%select(-dtindex)
-dtagr_tabaquisme_HTG<-dtagr_tabaquisme_HTG%>%select(-dtindex)
-dtagr_variables_HTG<-dtagr_variables_HTG%>%select(-dtindex)
-
+dt_variables1<-dt_variables %>% filter (cod!="TG")
+dt_variables2<-dt_variables %>% filter(cod=="TG")
 
 
 ```
 
-## 5. Fusio 1
+```{r la gran funcio}
 
-Fusionar part dels arxius agregats 
- 
-```{r fusio1}
+dt_plana<-readRDS(here::here(params$dir_dades_desti,"dt_plana.rds"))
+
+dt_parametres<-read_excel(here::here(conductor_codis2),sheet = "parametres")
+
+#dt_parametres
 
 
-dt_plana<-dt_index%>%
- left_join(select(dtagr_TG,-dtindex),by="idp")%>%
-    left_join(dt_poblacio,by="idp")%>%
-       left_join(dtagr_cartilla_sanitaria_HTG,by="idp")%>%
-         left_join(dtagr_diagnostics_HTG,by="idp")%>%
-           left_join(dtagr_diagnostics_HTG2,by="idp")%>%
-            left_join(dtagr_prescrip_HTG,by="idp")%>%
-              left_join(dtagr_facturat_HTG,by="idp")%>%
-               left_join(dtagr_tabaquisme_HTG,by="idp")%>%
-                left_join(dtagr_variables_HTG,by="idp")%>%
-                 left_join(dtagr_geosanitaries_HTG,by="idp")%>%
-                   left_join(dtagr_socioeconomiques_HTG,by="idp")%>%
-                    left_join(dtagr_embaras_HTG,by="idp")
-  
+dt_temp<-Generar_taula_plana(dt_index,cataleg = conductor_codis2,parametres = dt_parametres)%>%
+  select(-dtindex)
+
+dt_plana2<-dt_index%>%
+    left_join(dt_poblacio,by="idp") %>% 
+      left_join(dtagr_geosanitaries_HTG,by="idp") %>% 
+        left_join(dtagr_socioeconomiques_HTG,by="idp")%>%
+          left_join(dtagr_embaras_HTG,by="idp")%>%
+           left_join(dt_cartilla_sanitaria,by="idp")%>%
+            left_join(dt_temp,by=c('idp'))
+
+
+#[][]#
+#N==247
+length(dt_plana2)
+#[][]#
+#N==248
+length(dt_plana)
+
+names(dt_plana)[!names(dt_plana)%in%names(dt_plana2)]
+
 
 ```
 
-## 5. Salvar part1 
-```{r SALVAR}
-saveRDS(dt_plana, file=here::here(params$dir_dades_desti,"dt_plana.rds"))
 
 
-```
+
+
 
