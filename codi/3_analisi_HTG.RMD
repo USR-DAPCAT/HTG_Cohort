@@ -225,11 +225,10 @@ dades<-etiquetar(dades,camp_descripcio="descripcio1",taulavariables=conductor)
 
 
 
-descrTable(select(dades,-situacio),method = 2,Q1=0,Q3=1,extra.labels = c("","","")) %>% export2md()
+descrTable(TG.valor_CAT4~., dades,method = 2,Q1=0,Q3=1,extra.labels = c("","","")) %>% export2md()
 
 
 
-descrTable(TG.valor_CAT4~., dades)
 
 
 ```
