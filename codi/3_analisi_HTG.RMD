@@ -143,25 +143,35 @@ conductor_codis2<-here::here("Cataleg_HTG_BIG.xlsx")
 conductor<-here::here("conductor_HTG.xlsx")
 ```
 
-
-
-
-
-```{r llegir, include = TRUE}
-
-#######################################################
+```{r llegir, include = FALSE}
 # Llegir plana
+
 dades<-readRDS(here::here(params$dir_dades_desti,"dt_plana2.rds")) %>% as_tibble()
-# Filtrem  i ELIMINEM els Difunts anteriors al 20
-#
-#
-#######################################################
 
 
-#DG.DM2
-#FF.ADO
-#FP.ADO
-#HbA1c_7
+```
+
+
+## Etiquetar
+```{r etiquetes}
+
+
+
+
+#  Recodificar automaticament a partir del Conductor!
+#  dt_plana<-recodificar(dt_plana,taulavariables =conductor,"recode",missings = T)
+
+#Etquetem (Si/No)  a partir del Conductor!
+dades<-factoritzar.NO.SI(dades,"factor",conductor)
+
+
+#Etquetem  VALORS! de les VAR  a partir del Conductor!
+#dades<-etiquetar_valors(dt=dades,variables_factors=conductor,fulla="etiquetes",camp_etiqueta="etiqueta1")
+
+
+# Cat referencia
+dades<-dades %>% refcat(conductor = conductor,ref="refcat")
+
 
 
 dades<-dades%>%mutate(exclusio1=DG.Exclusion)
@@ -176,7 +186,62 @@ dades<-dades%>%mutate(exclusio2=ifelse(dtindex==sortida & situacio!="A",1,0))
 #dt_plana<-dt_plana%>%filter(stringr::str_sub(dtindex,1,4)==params$ANY)
 
 
-descrTable(TG.valor_CAT3~., dades)
+
+
+
+```
+## 1. Flow chart 
+```{r Flow chart, include=T}
+
+
+
+flow_chart1<-criteris_exclusio_diagrama(dt=dades,
+                                        taulavariables=conductor,
+                                        criteris = "exc_pre",
+                                        ordre="exc_ordre",
+                                        grups=NA,
+                                        etiquetes="descripcio2",
+                                        sequencial = T,
+                                        pob_lab=c("epiTempus DM2  ","epiTempus DM2 without exclusions"),
+                                        colors=c("white","grey"),
+                                        forma=c("ellipse","box"))
+
+flow_chart1
+
+
+
+
+#Apliquem les EXCLUSIONS!
+dades<-criteris_exclusio(dades,taulavariables=conductor,criteris="exc_pre")
+
+
+#Etquetem  NOMS! de les  VAR  a partir del Conductor!
+dades<-etiquetar(dades,taulavariables=conductor,camp_descripcio="descripcio2")
+
+
+#Etquetem  NOMS! de les  VAR  a partir del Conductor!
+dades<-etiquetar(dades,camp_descripcio="descripcio1",taulavariables=conductor)
+
+
+
+
+descrTable(select(dades,-situacio),method = 2,Q1=0,Q3=1,extra.labels = c("","","")) %>% export2md()
+
+
+
+descrTable(TG.valor_CAT4~., dades)
+
+
+```
+
+
+
+
+
+
+
+
+
 
 
 

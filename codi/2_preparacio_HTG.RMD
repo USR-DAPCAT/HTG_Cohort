@@ -121,6 +121,12 @@ dt_plana<-dt_plana%>% mutate(TG.valor_CAT3b=case_when(
  TG.valor>=500~1))
 
 
+dt_plana<-dt_plana%>% mutate(TG.valor_CAT4=case_when(
+ TG.valor<150~"1.<150"  ,
+ TG.valor>=150 & TG.valor<300~"2.[150-300)",  
+ TG.valor>=300 & TG.valor<500~"3.[300-500)",
+ TG.valor>=500 ~"3.>=500)"))
+
 #iii)
 
 dt_plana<-dt_plana%>% mutate(TSH.valor_CAT=case_when(TSH.valor<=10~"1.TSH=<10",
@@ -1554,31 +1560,7 @@ dt_plana<-dt_plana%>%mutate(DM_CAT2=case_when( DG.DM1==1  ~ "DM1",
 
 ```
 
-## Etiquetar
-```{r etiquetes}
 
-
-#  Recodificar automaticament a partir del Conductor!
-#  dt_plana<-recodificar(dt_plana,taulavariables =conductor,"recode",missings = T)
-
-#Etquetem (Si/No)  a partir del Conductor!
-dt_plana<-factoritzar.NO.SI(dt_plana,"factor",conductor)
-
-
-#Etquetem  VALORS! de les VAR  a partir del Conductor!
-dt_plana<-etiquetar_valors(dt=dt_plana,variables_factors=conductor,fulla="etiquetes",camp_etiqueta="etiqueta1")
-
-
-# Cat referencia
-dt_plana<-dt_plana %>% refcat(conductor = conductor,ref="refcat")
-
-
-#Etquetem  NOMS! de les  VAR  a partir del Conductor!
-dt_plana<-etiquetar(dt_plana,camp_descripcio="descripcio1",taulavariables=conductor)
-
-
-
-```
 ## 4. Salvar tabla plana
 ```{r salvar}
 
