@@ -1,0 +1,1569 @@
+---
+title: 'Analisi transversal descriptiu HTG.Data de tall:   `r params$bd.dindex`'
+author: "Jordi Real & Rai Puig"
+website: "https://github.com/USR-DAPCAT/"
+
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+
+
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_float: true
+    fig_caption: true
+    css: logos_css/usr_styles.css
+  pdf_document: default
+  word_document: default
+
+params:
+  dir_dades_desti: "dades/mostra"
+---
+
+
+&nbsp;
+<script>
+   $(document).ready(function() {
+     $head = $('#header');
+     $head.prepend('<img src=\"https://www.idiapjgol.org/images/logo.png\" style=\"float: right ;width: 130px;\"/>')
+     $head.prepend('<img src=\"https://avatars2.githubusercontent.com/u/57066591?s=200&v=4\" style=\"margin-left:25% ;width: 80px;\"/>')
+     $head.prepend('<img src=\"logoDAP_Cat.png\" style=\"float: left:1;width: 185px;\"/>')
+   });
+</script>
+
+
+
+<div class="watermark">DRAFT</div>
+
+
+
+
+# FASE LECTURA
+
+>> Generacioo de taula plana
+
+```{r setup, include = FALSE}
+
+library(dplyr)
+library(lubridate)
+# Funcions 
+link_source<-paste0("https://github.com/jrealgatius/Stat_codis/blob/master/funcions_propies.R","?raw=T")
+devtools::source_url(link_source)
+
+
+#[17.8.2021]
+conductor<-here::here("conductor_HTG.xlsx")
+conductor_codis<-here::here("Cataleg_HTG.xlsx")
+conductor_codis2<-here::here("Cataleg_HTG_BIG.xlsx")
+
+
+
+```
+## 1. Lectura 
+```{r lectura, include=T}
+# 1 Lectura -----------
+dt_plana<-readRDS(here::here(params$dir_dades_desti,"dt_plana.rds"))
+# per fer el conductor!:
+#
+# write.csv2(names(dt_plana), file="KK.csv")
+
+```
+
+## Recodificacions i calculs
+
+```{r recodificacions1,include=F}
+
+#recodificacions: HTG
+
+dt_plana<-dt_plana%>%mutate(TG_VAR=ifelse(is.na(TG.valor) ,"No","Si"))
+#dt_plana<-dt_plana%>%mutate(TG_VAR2=ifelse(is.na(TG.valor) ,0,1))
+
+
+table(dt_plana$TG_VAR)
+
+#5. Perdón por el error, creo que lo he aclarado mejor en el otro correo. 
+#Mantenemos niveles de HTG grave (>500) y muy grave (>880) tal como pone en el protocolo. 
+#Lo que quería era desglosar el ítem "normal" (<500) en los tres niveles: normal < 150, leve, 150-300, moderada 300-500.
+
+
+# No por valores normales y leves, no se que ha pasado con la categorización anterior pero principalmente hay 
+# 2 grupos TG > 500 mg/dl  y  TG>880 mg/dl.
+
+#A efectos de este estudio consideraremos como HTG moderada-grave a las personas que presenten concentraciones de TG > 500 mg/dl 
+#y muy grave las superiores a 880 mg/dl.
+
+
+#i)
+
+dt_plana<-dt_plana%>% mutate(TG.valor_CAT=case_when(
+ TG.valor<500~"1.[0-500).Normal/Moderat"  ,
+ TG.valor>=500 & TG.valor<880~"2.[500-880).Greu",  
+ TG.valor>=880 ~"3.>=880).Molt Greu"))
+
+#ii)
+
+dt_plana<-dt_plana%>% mutate(TG.valor_CAT2=case_when(
+ TG.valor<150~"1.[0-150)"  ,
+ TG.valor>=150 & TG.valor<300~"2.[150-300)",  
+ TG.valor>=300 & TG.valor<500~"3.[300-500)",
+ TG.valor>=500 & TG.valor<880~"4.[500-880)",
+ TG.valor>=880~"5.>=880"))
+
+
+#iib) 07.02.2022!!!
+
+dt_plana<-dt_plana%>% mutate(TG.valor_CAT3=case_when(
+ TG.valor<500~"1.Tg<500.No Greu"  ,
+ TG.valor>=500~"2.Tg>=500 Greu" ))
+
+dt_plana<-dt_plana%>% mutate(TG.valor_CAT3b=case_when(
+ TG.valor<500~0  ,
+ TG.valor>=500~1))
+
+
+dt_plana<-dt_plana%>% mutate(TG.valor_CAT4=case_when(
+ TG.valor<150~"1.<150"  ,
+ TG.valor>=150 & TG.valor<300~"2.[150-300)",  
+ TG.valor>=300 & TG.valor<500~"3.[300-500)",
+ TG.valor>=500 ~"3.>=500)"))
+
+#iii)
+
+dt_plana<-dt_plana%>% mutate(TSH.valor_CAT=case_when(TSH.valor<=10~"1.TSH=<10",
+                                                     TSH.valor> 10~"2.TSH>10"))
+
+#
+
+#iv)
+dt_plana<-dt_plana%>%mutate(Emb2=as.numeric(lubridate::ymd(dtindex)-lubridate::ymd(data_emb)))
+dt_plana<-dt_plana%>%mutate(Emb2=Emb2/365.25)
+dt_plana$Emb2=round(dt_plana$Emb2,3)
+
+#v)
+dt_plana<-dt_plana%>%mutate(Emb3=ifelse(Emb2>0 & Emb2<10 ,1,0))
+
+#vi)
+dt_plana<-dt_plana%>%mutate(HbA1c_7=ifelse(HBA1C.valor>7,1,0))
+
+#vii)
+#03.09.2021
+dt_plana<-dt_plana%>%mutate(HbA1c_8=ifelse(HBA1C.valor>8,1,0))
+
+#viii)
+#17.10.2021
+dt_plana<-dt_plana%>%mutate(TSH.10=ifelse(TSH.valor>10,1,0))
+
+
+#ix)
+#28.10.2021
+dt_plana<-dt_plana%>% mutate(qmedea2=case_when(qmedea=="U1"~1,
+                                               qmedea=="U2"~2,
+                                               qmedea=="U3"~3,
+                                               qmedea=="U4"~4,
+                                               qmedea=="U5"~5))
+                                               
+
+
+#x)   
+############
+#07.03.2021#
+############
+
+dt_plana<-dt_plana%>% mutate(tabac2=case_when(tabac.valor==0~0,
+                                              tabac.valor==1~1,
+                                                tabac.valor==2~0))
+
+
+
+#xi)
+dt_plana<-dt_plana %>% mutate(age=as.numeric(lubridate::ymd(dtindex)-lubridate::ymd(dnaix))/365.25)
+#
+
+
+
+#xii)**EDAT-->age2.cat: <30,[30-56),[56-75),>=75
+
+dt_plana<-dt_plana %>% mutate(age2.cat=case_when(age<30~ 1,
+                                                   age>=30 & age<56 ~ 2,
+                                                   age>=56 & age<75 ~ 3,
+                                                   age >=75~ 4 ))
+#10.2.2021.
+
+#xiii)**EDAT-->age2.cat: <56),[56-75),>=75
+
+dt_plana<-dt_plana %>% mutate(age3.cat=case_when(age<56 ~ 1,
+                                                   age>=56 & age<75 ~ 2,
+                                                   age >=75~ 3 ))
+
+
+#xiv)**EDAT-->age3.cat-><30,[30-40),[40-50),[50-60),[60-70),[70-80),>=80
+dt_plana<-dt_plana%>%mutate(age4.cat=case_when(     age<30~ 1,
+                                                      age>=30 & age<40 ~ 2,  
+                                                     age>=40 & age<50 ~ 3,
+                                                     age>=50 & age<60 ~ 4,
+                                                      age>=60 & age<70 ~ 5,
+                                                      age>=70 & age<80 ~ 6,
+                                                age>=80~ 7 ))
+
+
+#[23.10.2021]
+#xv)**EDAT-->age3.cat-><30,[30-40),[40-50),[50-60),[60-70),[70-80),>=80
+dt_plana<-dt_plana%>%mutate(age5.cat=case_when(     age<18~ 1,
+                                                    age>=18 & age<36 ~ 2,  
+                                                    age>=36 & age<51 ~ 3,
+                                                    age>=51 & age<65 ~ 4,
+                                                    age>=65~ 5 ))
+
+
+
+
+#xvi)
+dt_plana<-dt_plana%>% mutate_at(c("dnaix","entrada","sortida" ),ymd)
+
+
+
+
+#---------------------------------------------------------------------------------------------------------------#
+#xviii)**Index de Massa Corporal->IMC.valor_cat2: <18.5,[18.5-25),[25-30),>=30
+#---------------------------------------------------------------------------------------------------------------#
+dt_plana<-dt_plana%>%mutate(IMC.valor_cat2=case_when(   TT103.valor   <18.5~ 1,
+                                                        TT103.valor   >=18.5 & TT103.valor   <25 ~ 2,  
+                                                        TT103.valor   >=25 & TT103.valor   <30 ~ 3,
+                                                        TT103.valor   >=30  ~ 4))
+#[23.10.2021]#
+#---------------------------------------------------------------------------------------------------------------#
+#xix)**Index de Massa Corporal->IMC.valor_cat3: <=30,>30
+#---------------------------------------------------------------------------------------------------------------#
+dt_plana<-dt_plana%>%mutate(IMC.valor_cat3=case_when( TT103.valor   <=30~ 1,TT103.valor   >30  ~ 2))
+
+
+
+dt_plana<-dt_plana%>%mutate(IMC.valor_cat5=case_when(   TT103.valor   <25~ 1,
+                                                        TT103.valor   >=25 & TT103.valor   <30 ~ 2,  
+                                                        TT103.valor   >=30  ~ 3))
+#
+
+
+#xx)
+#[23.10.2021]#
+#---------------------------------------------------------------------------------------------------------------#
+dt_plana <- dt_plana %>%
+      mutate(IMC.valor_cat4 = case_when(TT103.valor   <=30  & (agr_pais!="Àsia central"  & 
+                                                               agr_pais!="Àsia meridional"  &
+                                                               agr_pais!="Àsia occidental"  &
+                                                               agr_pais!="Àsia oriental"  &
+                                                               agr_pais!="Àsia sud-oriental"  
+                                                               ) ~ 1 ,
+                                        
+                                        
+                                        
+                                        
+                                        TT103.valor   >30  & (agr_pais!="Àsia central"  & 
+                                                               agr_pais!="Àsia meridional"  &
+                                                               agr_pais!="Àsia occidental"  &
+                                                               agr_pais!="Àsia oriental"  &
+                                                               agr_pais!="Àsia sud-oriental" ) ~ 3
+                                        
+                                        
+                                        ,
+                                        
+                                        TT103.valor  <=27.5  & (agr_pais=="Àsia central"   | 
+                                                               agr_pais=="Àsia meridional"   |
+                                                               agr_pais=="Àsia occidental"   |
+                                                               agr_pais=="Àsia oriental"   |
+                                                               agr_pais=="Àsia sud-oriental"  ) ~ 2
+
+
+
+
+                                        
+                                        ,
+                                                        
+                                        TT103.valor   >27.5  & (agr_pais=="Àsia central"  | 
+                                                               agr_pais=="Àsia meridional"   |
+                                                               agr_pais=="Àsia occidental"   |
+                                                               agr_pais=="Àsia oriental"   |
+                                                               agr_pais=="Àsia sud-oriental"   ) ~ 4                          
+                                        ))
+                                        
+
+  
+  
+#xxi)  
+dt_plana<-dt_plana%>%mutate(COL_NO_HDL.valor=COLTOT.valor-COLHDL.valor)
+
+#xxii)
+dt_plana<-dt_plana%>%mutate(COL_REM.valor=COLTOT.valor-(COLHDL.valor+COLLDL.valor))
+
+
+
+#xxiii)
+#3. ¿En la tabla plana se podrán categorizar los niveles de insuficiencia renal: <15, 15-30, 30-45, 45-60, >60?
+#10.2.2021.
+dt_plana<-dt_plana%>%mutate(CKDEPI.valor_CAT2=case_when(CKDEPI.valor     <15~ 1,
+                                                          CKDEPI.valor     >=15 & CKDEPI.valor     <30 ~ 2,  
+                                                          CKDEPI.valor     >=30 & CKDEPI.valor     <45 ~ 3,
+                                                          CKDEPI.valor     >=45 & CKDEPI.valor     <60 ~ 4,
+                                                          CKDEPI.valor     >=60 & CKDEPI.valor     <90 ~ 5,
+                                                          CKDEPI.valor     >=90  ~ 6))
+#xxiv)
+#################################
+# eps rectificat!: #[12.07.2021]#
+#################################
+#--------------------------------------------------------------------------------------------------------------#
+#iii) insuficiencia renal cronica : Insuficiencia Renal Cronica: #[diagnostico +segun valores de FG, FG<60]
+#--------------------------------------------------------------------------------------------------------------#
+# corregit els dia 1.xi.2020!!!
+#
+dt_plana<-dt_plana%>%mutate(DG.IRC2=ifelse((CKDEPI.valor<60 | CAC.valor>300)  ,1,0)) 
+#
+#
+#xxv)
+dt_plana<-dt_plana%>%mutate(DG.FG60=ifelse(CKDEPI.valor<60   ,1,0)) 
+
+#xxvi)
+dt_plana<-dt_plana%>%mutate(DG.CAC300=ifelse(CAC.valor>300   ,1,0)) 
+
+#xxvii)                           
+dt_plana<-dt_plana%>%mutate(DG.IRC2=ifelse((CKDEPI.valor<60 | CAC.valor>300)  ,1,0)) 
+
+
+# fet el dia 16.11.2021! 
+
+#xxviii) 
+    
+dt_plana<-dt_plana%>%mutate(GGT.valor_CAT=case_when((GGT.valor     >=1 & GGT.valor     <50 ~ 0),
+                                                     (GGT.valor     >=50 & GGT.valor     <100 ~ 1),
+                                                      GGT.valor     >=100 ~ 2 ))
+                                                     
+#xxix)   
+
+
+dt_plana<-dt_plana%>%mutate(HTG_COLESTASIS=case_when(GGT.valor_CAT==0 ~ 0,(GGT.valor_CAT==1  | GGT.valor_CAT==2)~ 1))
+
+   
+
+
+#xxx) convertim les dates i els Na , en una variable DICOTOMICA (0,1)!
+#---------------------------------------------------------------------------------------------------------------#
+dt_plana<-mutate_at(dt_plana, vars( starts_with("DG.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+dt_plana<-mutate_at(dt_plana, vars( starts_with("EVENT.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+dt_plana<-mutate_at(dt_plana, vars( starts_with("FF.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+dt_plana<-mutate_at(dt_plana, vars( starts_with("FP.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+dt_plana<-mutate_at(dt_plana, vars( starts_with("Emb3") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+
+
+
+
+# HO HEM DE TORNAR A CANVIAR,DIMARTS 7.Desembre!:
+# tinc els dubte si he d'aplicar al is.na(.) a les variable HbA1c_7/HbA1c_8/THS.10/HTG_COLESTASIS, assumint a NA, com NO!
+
+
+dt_plana<-mutate_at(dt_plana, vars( starts_with("HbA1c_7") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+dt_plana<-mutate_at(dt_plana, vars( starts_with("HbA1c_8") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+dt_plana<-mutate_at(dt_plana, vars( starts_with("TSH.10") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+dt_plana<-mutate_at(dt_plana, vars( starts_with("HTG_COLESTASIS") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+
+
+
+#DG.DM2==1 | DG.DM1==1 | DG.DM_ALTRES==1 | (DG.DM_GEST==1 & Emb3==1) | DG.DM_IND==1 ) 
+
+#xxxi)
+dt_plana<-dt_plana%>%mutate(DM_CAT=case_when( (DG.DM1==1  ~ 0),
+                                              
+                                             ((DG.DM2==1 | FF.ADO==1 | FP.ADO==1) ~ 1),
+                                             
+                                             ( (DG.DM_ALTRES==1) | (DG.DM_GEST==1 & Emb3==1) | (DG.DM_IND==1) ) ~ 2 ))
+
+
+#xxxib)
+dt_plana<-dt_plana%>%mutate(DG.DM_GEST2=ifelse((DG.DM_GEST==1 & Emb3==1)  ,1,0)) 
+
+
+#dt_temp<-dt_plana%>%select(idp,DM_CAT,DG.DM1,DG.DM2,DG.DM_ALTRES,DG.DM_IND,DG.DM_GEST,Emb3)
+
+
+
+
+#TAULA_PLANA<-TAULA_PLANA %>% mutate(
+#     GRUP_DIABETIC_CAT2 = case_when(
+#          DG.DM1==1 ~ 1,
+#          (DG.DM2==1 | FF.ADO=1| FP.ADO=1) ~ 2,
+#          G_DIABETIC==1 ~ 3,
+#          TRUE ~ 0
+#     )
+#)
+
+
+
+
+#i
+#table(dt_plana$ALCOHOL_CS)
+#table(dt_plana$HbA1c_8)
+#ii)
+#table(dt_plana$IMC.valor_cat3)
+#iii)
+#table(dt_plana$DG.IRC2)
+#iv)
+#table(dt_plana$Emb3)
+#v)
+#table(dt_plana$TSH.10)
+#vi)
+#table(dt_plana$DG.VIH)
+#vii)
+#table(dt_plana$DG.LUPUS)
+#viii)
+#table(dt_plana$DG.HEMOCROMAT)
+#ix)
+#table(dt_plana$FP.ANTIPSICO)
+#table(dt_plana$FF.ANTIPSICO)
+#x)
+#table(dt_plana$FP.CORTIS_SIST)
+#table(dt_plana$FF.CORTIS_SIST)
+
+
+
+#
+#DM_ CAT_si	1	[E11 y/o ADO y/o HbA1c>7]
+#
+#0
+#dt_plana$DG.DM2
+#dt_plana$FF.ADO
+#dt_plana$FP.ADO
+#dt_plana$HbA1c_7
+
+#xxix)
+#dt_plana<-dt_plana%>%mutate(DM_CAT=ifelse(DG.DM2==1 | FF.ADO==1 | FP.ADO==1 | HbA1c_7==1 ,1,0)) 
+
+#xxxii) DM-gestacional,ha d'estar embarassada al moment de DM. corregit 17.11.2021!!
+dt_plana<-dt_plana%>%mutate(DM_CAT_HAB1C8=ifelse(((DG.DM2==1 | DG.DM1==1 | DG.DM_ALTRES==1 | (DG.DM_GEST==1 & Emb3==1) | DG.DM_IND==1 )  & HbA1c_8==1) | HbA1c_8==1 ,1,0)) 
+
+
+#xxxiii)
+dt_plana<-dt_plana%>%mutate(UBE_DIA=ALSET.valor/7)
+dt_plana<-dt_plana%>%mutate(CONSUM_ALCOHOL=case_when(  UBE_DIA  ==0  |  is.na(UBE_DIA)  ~ 0,
+                           UBE_DIA>0 & UBE_DIA  <4 & age>=18 & sexe=="H" ~ 1,
+                           UBE_DIA>0 & UBE_DIA  <2.5 & age>=18 & sexe=="D"  ~ 1,
+                           UBE_DIA>=4 & age>=18 & sexe=="H"  ~ 2,
+                           UBE_DIA>=2.5 & age>=18 & sexe=="D"  ~ 2 ,
+                           UBE_DIA>0 & age<18   ~ 2,
+                           UBE_DIA>0 & Emb3==1   ~ 2 ,
+                           DG.PANC_AG_AL == 1 ~ 2
+                           )) 
+                                
+
+#table(dt_plana$DG.DM_GEST,dt_plana$Emb3)
+#table(dt_plana$DG.DM_GEST)
+#table(dt_plana$Emb3)
+
+                    
+#dt_temp<-dt_plana%>%select(idp,CONSUM_ALCOHOL,UBE_DIA,age,sexe,Emb3)
+
+
+# HO HEM DE TORNAR A CANVIAR,DIMARTS 7.Desembre!:
+# tinc els dubte si he d'aplicar al is.na(.) a les variable HbA1c_7/HbA1c_8/THS.10/HTG_COLESTASIS, assumint a NA, com NO!
+
+#xxxiv)  ????? DEMÀ JORDI REAL!
+#28.10.2021:
+dt_plana<-dt_plana%>%mutate(ALCOHOL_CS=ifelse(CONSUM_ALCOHOL==1 | CONSUM_ALCOHOL==2 | (ALSET.valor>13 & sexe=="D") | (ALSET.valor>21 & sexe=="H") ,1,0))
+dt_plana<-mutate_at(dt_plana, vars( starts_with("ALCOHOL_CS") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+
+
+#IMC.valor_cat4
+
+
+#xxxv)
+#1.	Bloque 1 o HTG secundaria primer escalón: 
+
+#i)     alcohol, ALCOHOL_CS=1
+#ii)    IMC > 30 (>27.5 si eres asiático),   IMC.valor_cat4=3 o IMC.valor_cat4=4
+#iii)   diabetes con HbA1c > 8% (HbA1c > 8 sin que se tenga abierto el dco de diabetes) DM_CAT_HAB1C8=1
+
+
+# HO HEM DE TORNAR A CANVIAR,DIMARTS 7.Desembre!:
+# tinc els dubte si he d'aplicar al is.na(.) a les variable HbA1c_7/HbA1c_8/THS.10/HTG_COLESTASIS, assumint a NA, com NO!
+#????? DEMÀ JORDI REAL!
+dt_plana<-dt_plana%>%mutate(BLOC1=ifelse((ALCOHOL_CS==1 | IMC.valor_cat4==3 | IMC.valor_cat4==4 |    DM_CAT_HAB1C8==1 )  ,1,0)) 
+dt_plana<-mutate_at(dt_plana, vars( starts_with("BLOC1") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+
+
+#xxxvi)
+#2.	    Bloque 2 o HTG secundarias segundo escalón: BLOQUE 1 + hepatopatía + nefropatía: 
+
+#i)	    Chronic Renal Insufficiency GFR <60 or CAC> 300
+#ii)	  FG<60
+#iii)	  CAC>300
+#iv)  	Hepatic steatosis
+#v)   	Hemochromatosis
+#vi)  	HTG_COLESTASIS
+
+# HO HEM DE TORNAR A CANVIAR,DIMARTS 7.Desembre!:
+# tinc els dubte si he d'aplicar al is.na(.) a les variable HbA1c_7/HbA1c_8/THS.10/HTG_COLESTASIS, assumint a NA, com NO!
+#????? DEMÀ JORDI REAL!
+dt_plana<-dt_plana%>%mutate(BLOC2=ifelse(BLOC1==1          |
+                                        DG.IRC2==1         | 
+                                        DG.FG60==1         |
+                                        DG.CAC300==1       |
+                                        DG.ESTE_HEPAT==1   |
+                                        DG.HEMOCROMAT==1   |
+                                        HTG_COLESTASIS==1,1,0)) 
+dt_plana<-mutate_at(dt_plana, vars( starts_with("BLOC2") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+
+
+#xxxvii)
+#3.	Bloque 3 o HTG secundarias tercer escalón o suma de todas las secundarias BLOQUE 1 + BLOQUE 2 + resto: 
+
+# HO HEM DE TORNAR A CANVIAR,DIMARTS 7.Desembre!:
+# tinc els dubte si he d'aplicar al is.na(.) a les variable HbA1c_7/HbA1c_8/THS.10/HTG_COLESTASIS, assumint a NA, com NO!
+#????? DEMÀ JORDI REAL!
+dt_plana<-dt_plana%>%mutate(BLOC3=ifelse(BLOC1==1            |
+                                         BLOC2==1            |
+                                         DG.ENF_MENTAL_G==1  |        
+                                         FP.Farmac_ca_sec==1 |  
+                                         FP.ANTIPSICO==1     |  
+                                         FP.CICLOSPOR==1     |  
+                                         FP.CORTIS_SIST==1   |  
+                                         FP.ESTROGEN==1      |  
+                                         DG.TRAST_SIST==1    |  
+                                         DG.VIH==1           |  
+                                         TSH.10==1           |  
+                                         DG.CANCER==1 
+                                         ,1,0)) 
+dt_plana<-mutate_at(dt_plana, vars( starts_with("BLOC3") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+
+#i)     Mental diseases (nos la habíamos dejado)
+#ii)    Drugs that cause HTG[FP] 
+#       (ESTA VARIABLE CREO QUE INCLUYE TODAS, 
+#         se debe revisar pero podemos hacerlo la próxima reunión para no liarnos, de momento incluyamos las categorías de fármacos totales e individuales que más afectan a los TG). 
+#iii  	Drugs Acidretino [FP]
+#iv)  	Antipsictics Drugs [FP]
+#v)     CICLOSPOR [FP]
+#vi)  	Esteriodes Drugs [FP] 
+#vii)   ESTROGEN [FP]
+#viii)  Sistémicas (DG.TRAST_SIST)
+#ix)  	HIV
+#x)     Thyrotropin> 10
+#xi)    Cancer y exclusió
+
+
+#xxxviii)
+#	Bloque 0 o HTG primarias: TODOS LOS QUE NO PERTENEZCAN A LOS BLOQUES, s'ha de canviar!!!
+
+#????? DEMÀ JORDI REAL!
+
+#(IMC.valor_cat4!=3  |  is.na(IMC.valor_cat4))            &
+#(IMC.valor_cat4!=4  |  is.na(IMC.valor_cat4))            &
+
+##########################################################################
+#dt_plana<-dt_plana%>%mutate(BLOC0=ifelse(ALCOHOL_CS==0                  &
+#                                         IMC.valor_cat4!=3              &
+#                                         IMC.valor_cat4!=4              &
+#                                         DM_CAT_HAB1C8==0               &
+#                                         DG.IRC2==0                     &
+#                                         DG.FG60==0                     &
+#                                         DG.CAC300==0                   &
+#                                         DG.ESTE_HEPAT==0               &
+#                                         DG.HEMOCROMAT==0               &
+#                                         HTG_COLESTASIS==0              &
+#                                         DG.ENF_MENTAL_G==0             &
+#                                         FP.Farmac_ca_sec==0            &
+#                                         FP.ACIDRETINO==0               &
+#                                         FP.ANTIPSICO==0                &
+#                                         FP.CICLOSPOR==0                &
+#                                         FP.CORTIS_SIST==0              &
+#                                         FP.ESTROGEN==0                 &
+#                                         DG.TRAST_SIST==0               &
+#                                         DG.VIH==0                      &
+#                                         TSH.10==0                      &
+#                                         DG.CANCER==0         ,1,0))    #
+##########################################################################
+##########################################################################
+#
+#BLOC0
+#i)                       ALCOHOL_CS==0                  
+#ii)                      IMC.valor_cat4!=3              
+#iii)                     IMC.valor_cat4!=4              
+#iv)                      DM_CAT_HAB1C8==0               
+#v)                       DG.IRC2==0                    
+#vi)                      DG.FG60==0                     
+#vii)                     DG.CAC300==0                   
+#viii)                    DG.ESTE_HEPAT==0               
+#ix)                      DG.HEMOCROMAT==0              
+#x)                       HTG_COLESTASIS==0             
+#xi)                      DG.ENF_MENTAL_G==0               
+#xii)                     FP.Farmac_ca_sec==0           
+#xiii)                    FP.ACIDRETINO==0               
+#xiv)                     FP.ANTIPSICO==0                
+#xv)                      FP.CICLOSPOR==0                
+#xvi)                     FP.CORTIS_SIST==0              
+#xvii)                    FP.ESTROGEN==0                 
+#xviii)                   DG.TRAST_SIST==0               
+#xix)                     DG.VIH==0                     
+#xx)                      TSH.10==0                     
+#xxi)                     DG.CANCER==0         ,
+##########################################################################
+
+
+# HO HEM DE TORNAR A CANVIAR,DIMARTS 7.Desembre!:
+# tinc els dubte si he d'aplicar al is.na(.) a les variable HbA1c_7/HbA1c_8/THS.10/HTG_COLESTASIS, assumint a NA, com NO!
+dt_plana<-dt_plana%>%mutate(BLOC0=ifelse(BLOC1==0              &
+                                         BLOC2==0               &
+                                         BLOC3==0 
+                                         ,1,0)) 
+
+
+#eps, és aqui:[07.12.2021]
+
+#dt_plana<-mutate_at(dt_plana, vars( starts_with("BLOC0") ), funs( if_else(.==1  | is.na(.)  ,1,0)))
+
+#BLOC1
+#dt_plana<-dt_plana%>%mutate(BLOC1=ifelse(ALCOHOL_CS==1,1,0)) 
+
+
+#d_temp<-dt_plana%>%select(idp,BLOC0,BLOC0B,ALCOHOL_CS,IMC.valor_cat4
+#                                         ,DM_CAT_HAB1C8
+#                                         ,DG.IRC2
+#                                         ,DG.FG60
+#                                         ,DG.CAC300
+#                                         ,DG.ESTE_HEPAT
+#                                         ,DG.HEMOCROMAT
+#                                         ,HTG_COLESTASIS
+#                                         ,DG.ENF_MENTAL_G
+#                                         ,FP.Farmac_ca_sec
+#                                         ,FP.ACIDRETINO
+#                                         ,FP.ANTIPSICO
+#                                         ,FP.CICLOSPOR
+#                                         ,FP.CORTIS_SIST
+#                                         ,FP.ESTROGEN
+#                                         ,DG.TRAST_SIST
+#                                         ,DG.VIH
+#                                         ,TSH.10
+#                                         ,DG.CANCER,BLOC1,BLOC2,BLOC3)
+
+
+#xxxix)
+
+dt_plana<-dt_plana%>%mutate(agr_pais2=case_when( agr_pais=="Àfrica central"           ~ 1,
+                                                 agr_pais=="Àfrica meridional"        ~ 1,
+                                                 agr_pais=="Àfrica occidental"        ~ 1,
+                                                 agr_pais=="Àfrica oriental"          ~ 1,
+                                                 agr_pais=="Àfrica septentrional"     ~ 1,
+                                                 agr_pais=="Amèrica central"          ~ 2,
+                                                 agr_pais=="Amèrica del Nord"         ~ 2,
+                                                 agr_pais=="Amèrica del Sud"          ~ 2,
+                                                 agr_pais=="Carib"                    ~ 2,
+                                                 agr_pais=="Àsia central"             ~ 3,
+                                                 agr_pais=="Àsia meridional"          ~ 3,
+                                                 agr_pais=="Àsia occidental"          ~ 3,
+                                                 agr_pais=="Àsia oriental"            ~ 3,
+                                                 agr_pais=="Àsia sud-oriental"        ~ 3,
+                                                 agr_pais=="Espanya"                  ~ 4,
+                                                 agr_pais=="Europa meridional"        ~ 4,
+                                                 agr_pais=="Europa occidental"        ~ 4,
+                                                 agr_pais=="Europa oriental"          ~ 4,
+                                                 agr_pais=="Europa septentrional"     ~ 4,
+                                                 agr_pais=="Austràlia i Nova Zelanda" ~ 5,
+                                                 agr_pais=="Melanèsia"                ~ 5,
+                                                 agr_pais=="Micronèsia"               ~ 5,
+                                                 agr_pais=="Polinèsia"                ~ 5,
+                                                 
+                                                 
+                                                 
+                                                 
+                                                 
+                           
+                           )) 
+                
+
+#    agr_pais:
+
+#1.  Àfrica central       
+#2.  Àfrica meridional        
+#3.  Àfrica occidental 
+#4.  Àfrica oriental      
+#5.  Àfrica septentrional     
+#6.  Amèrica central             
+#7.  Amèrica del Nord
+#8.  Amèrica del Sud      
+#9.  Àsia central             
+#10. Àsia meridional             
+#11  Àsia occidental
+#12  Àsia oriental        
+#13  Àsia sud-oriental        
+#14  Austràlia i Nova Zelanda    
+#15  Carib 
+#16  Espanya              
+#17  Europa meridional        
+#18  Europa occidental          
+#19  Europa oriental 
+#20  Europa septentrional                
+#21  Melanèsia               
+#22  Micronèsia                
+#23  Polinèsia
+
+
+
+#xxxiii)
+#dt_plana<-dt_plana%>%mutate(Causes_Sec=ifelse(
+#                                        ALCOHOL_CS==1         | 
+#                                        DM_CAT_HAB1C8==1      |
+#                                        IMC.valor_cat3==2     |
+#                                        DG.IRC2==1            | 
+#                                        Emb3==1               | 
+#                                        TSH.10==1             | 
+#                                        DG.VIH==1             | 
+#                                        DG.TRAST_SIST==1      | 
+#                                        DG.HEMOCROMAT==1      | 
+#                                        FP.ANTIPSICO==1       | 
+#                                        FF.ANTIPSICO==1       | 
+#                                        FP.CORTIS_SIST==1     | 
+#                                        FF.CORTIS_SIST==1     |
+#                                        DG.CANCER==1          |
+#                                        HTG_COLESTASIS==1
+#                                        
+#                                        ,   1,0)) 
+
+
+#dt_plana<-mutate_at(dt_plana, vars( starts_with("Causes_Sec") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+
+
+
+#xxxiv)
+#dt_plana<-dt_plana%>%mutate(BLOC1=ifelse(ALCOHOL_CS==1,1,0)) 
+
+#xxxv)                            
+#dt_plana<-dt_plana%>%mutate(BLOC2=ifelse(ALCOHOL_CS==1       | 
+#                                        DM_CAT_HAB1C8==1            |
+#                                        IMC.valor_cat3==2     |
+#                                        DG.IRC2==1             
+#                                                    
+#                                        ,1,0)) 
+
+
+
+
+
+
+#dt_temp<-dt_plana%>%select(idp,
+#                      Causes_Sec,
+#                      ALCOHOL_CS,
+#                      DM_CAT_HAB1C8,
+#                      IMC.valor_cat3,
+#                      DG.IRC2,
+#                      Emb3,
+#                      TSH.10,
+#                      DG.VIH,
+#                      DG.TRAST_SIST,
+#                      DG.HEMOCROMAT,
+#                      FP.ANTIPSICO,
+#                      FF.ANTIPSICO,
+#                      FP.CORTIS_SIST,
+#                      FF.CORTIS_SIST)
+
+
+#15.02.2022
+#dt_plana<-dt_plana%>%mutate(HbA1c_8=ifelse(HBA1C.valor>8,1,0))
+
+
+
+# mirar: Glucemia basal 110-125 mg/dl ?? preguntar J.Real!!! 16.2.2022!!
+
+#dt_plana<-dt_plana%>%mutate(DM_CAT2=case_when( ((DM_CAT==0 | DM_CAT==1 | DM_CAT==2) ~ "DM"),
+#                                               ((HBA1C.valor>=5.7  &  HBA1C.valor<=6.4)  ~ "Pre_DM" ), TRUE ~ "Normals" ))
+
+
+
+
+
+
+# mirar: Glucemia basal 110-125 mg/dl ?? preguntar J.Real!!! 16.2.2022!!
+
+
+
+dt_plana<-dt_plana%>%mutate(DM_CAT2=case_when( DG.DM1==1  ~ "DM1",
+                                              
+                                             (DG.DM2==1 | FF.ADO==1 | FP.ADO==1) ~ "DM2",
+                                             
+                                             ( DG.DM_ALTRES==1 | DG.DM_GEST==1 & Emb3==1 | DG.DM_IND==1 ) ~ "DM_ALTRES" ,
+                                             (HBA1C.valor>=5.7  &  HBA1C.valor<=6.4)  ~ "Pre_DM" , 
+                                              TRUE ~ "Normals"))
+
+
+
+
+
+
+                                
+
+
+```
+
+```{r recodificacions2,include=F}
+#II)Problemes de Salut.
+
+
+
+
+
+#[CODIS ANTERIORS]#
+#dt_plana<-dt_plana%>% mutate(TG.valor_CAT3=case_when(TG.valor>=0 & TG.valor<150 ~"1.[0-150)",
+#                                                    TG.valor>=150 & TG.valor<300 ~"2.[150-300)",
+#                                                    TG.valor>=300 & TG.valor<500 ~"3.[300-500)",
+#                                                    TG.valor>=500 & TG.valor<880 ~"4.[500-880)",
+#                                                    TG.valor>=880~"5.>=880"))
+#                                                    
+#falta:
+#
+#DM_ CAT_si	1	[E11 y/o ADO y/o HbA1c>7]
+#EMBARAZO	1	9 meses desde la fecha corte 
+
+
+#? Falta catáleg!!
+
+#ADO (medicament_FF,medicament_FP...agr)
+#dt_plana<-dt_plana%>%mutate(ADO=ifelse(HBA1C.valor>7,1,0))
+
+#E11 (problema de salut E11,... agr)
+#dt_plana<-dt_plana%>%mutate(E11=ifelse(HBA1C.valor>7,1,0))
+  
+
+#TAULA_PLANA<-TAULA_PLANA %>% mutate(
+#     GRUP_DIABETIC_CAT2 = case_when(
+#          DM1==1 ~ 1,
+#          (DM2==1 | FX.ADO=="20200520") ~ 2,
+#          G_DIABETIC==1 ~ 3,
+#          TRUE ~ 0
+#     ))
+#DG.DM2
+#FF.ADO
+#FP.ADO
+
+
+#falta agregació de i)   CANCER( excluimos cancer de tiroides o de piel no melanoma)
+#                   ii)  TRANSPLANTE!!
+
+#I)Poblacio.
+
+
+#[1] "idp"      "sexe"     "dnaix"    "situacio" "entrada"  "sortida" 
+
+#1.11.2020 PREGUNTAR BOGDAN!!!
+# Una pregunta , 1.11.2020, si tenim un problema de salut i un valor d'alguna analitica o clinica, ens hem de preguntar. com volem aquest valor, nosaltres tenim, el mes proper de l'ultim any!
+##agregar_analitiques(dt=dt_variables,bd.dindex="20181231",finestra.dies = c(-365,0))
+
+
+
+#--------------------------------------------------------------------------------------------------------------#
+#v)**RECONVERIR-HO A DATES a "dnaix","entrada","sortida"
+#--------------------------------------------------------------------------------------------------------------#
+#dt_plana<-dt_plana%>%mutate(DG.PANC_AG_AL=0)
+#cols <- c(top_speed = NA_real_, nhj = NA_real_, mpg = NA_real_)
+#cols2 <-add_column(mtcars, !!!cols[setdiff(names(cols), names(mtcars))])
+
+
+# mirar-ho! 29.10.2021.
+# s'ha de fer si no existeix variable!!!
+#cols<-c(DG.PANC_AG_AL=0)
+#dt_plana<-tibble:: add_column(dt_plana,!!!cols[setdiff(names(cols), names(dt_plana))])
+#dt_plana<-dt_plana%>%mutate(DG.PANC_AG_AL=0)
+
+
+
+
+#[CODIS ANTERIORS]#
+#i)**temps_evolucio->TEMPS EVOLUCIO DM2
+#--------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(temps_evolucio=(ymd(dtindex)-ymd(INCLUSIO.DM2)),temps_evolucio=round(temps_evolucio/365.25,2)%>% as.numeric()) 
+
+#  dt_plana<-dt_plana%>%mutate(DATA_DM2=INCLUSIO.DM2)
+
+#--------------------------------------------------------------------------------------------------------------#
+#ii)**temps de evolucion de la malaltia_categorica-->temps_evolucio_cat:<5,[5-11),[11-20),>=20
+#--------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(temps_evolucio_cat=case_when(
+#                                                      temps_evolucio<5~ 1,
+#                                                        temps_evolucio   >=5 &   temps_evolucio   <11 ~ 2,  
+#                                                        temps_evolucio   >=11 &   temps_evolucio   <20 ~ 3,
+#                                                       temps_evolucio>=20  ~ 4))
+#10.2.2021.
+#--------------------------------------------------------------------------------------------------------------#
+#iii)  Tiempo evoluciOn diabetes, hacer nueva categorizacion , menos de 5 anos, entre 5 y 15 anos y de 50  y mas anos de evolucion
+#--------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(temps_evolucio_cat2=case_when(
+#                                                        temps_evolucio<5~ 1,
+#                                                       temps_evolucio   >=5 &   temps_evolucio   <15 ~ 2,  
+#                                                        temps_evolucio>=15  ~ 3))
+
+#--------------------------------------------------------------------------------------------------------------#
+#iv)  Tiempo evoluciOn diabetes, hacer nueva categorizacion , menos de 5 anos, entre 5 y 19 anos y de 20  y mas anos de evolucion
+#--------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(temps_evolucio_cat3=case_when(
+#                                                       temps_evolucio<5~ 1,
+#                                                        temps_evolucio   >=5 &   temps_evolucio   <20 ~ 2,  
+#                                                       temps_evolucio>=20  ~ 3))
+#  dt_plana<-mutate_at(dt_plana, vars( starts_with("Deriv2018.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+#[30.11.2020]#
+#  dt_plana<-mutate_at(dt_plana, vars( starts_with("GRUP365.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+#  dt_plana<-mutate_at(dt_plana, vars( starts_with("GRUP.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+#  dt_plana<-mutate_at(dt_plana, vars( starts_with("FFF.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+#  dt_plana<-mutate_at(dt_plana, vars( starts_with("F365.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+#combinacions DIAGNOSTICS!:
+#vi) Neuropatia periferica : diagnostico registrado o el valor de monofilamento
+#  dt_plana<-dt_plana%>%mutate(DG.NEUROPT2=ifelse(DG.NEUROPT==1,1,0)) 
+#############################################################################################
+#26.10.2021!!!
+#vii)
+#  dt_plana<-dt_plana%>%mutate(FF.Niad.Insul=ifelse(FF.Niad==1 | FF.Insul==1  ,1,0)) 
+#############################################################################################
+#viii)
+#  dt_plana<-dt_plana%>%mutate(GRUP2=case_when(GRUP365.UEIP ==1~ 1,GRUP.UEIP ==0~ 0))  
+#Prova dels Grups!
+#table(dt_plana$GRUP.UEIP)
+#table(dt_plana$GRUP365.UEIP)
+#table(dt_plana$GRUP365.UEIPA)
+#table(dt_plana$GRUP2)
+
+##III)Tabaquisme+V.Analitiques+V.Cliniques.##
+
+
+
+#Se considera consumo de riesgo de alcohol, en población adulta (≥18 años), el consumo
+#de ≥ 4 Unidades de Bebida Estándar/día (UBE/día) en hombres y ≥ 2-2,5 UBE en mujeres
+#así como cualquier consumo en el caso de mujeres embarazadas, menores de edad (<18
+#años) y personas con actividades, enfermedades y tratamientos que desaconsejen su consumo.
+
+
+#---------------------------------------------------------------------------------------------------------------#
+##xvi)**HBA1C.Cambiar los rangos para HbA1c (<=8,  >8)
+#---------------------------------------------------------------------------------------------------------------#
+#dt_plana<-dt_plana%>%mutate(GLICADA_CAT8=case_when(GLICADA.valor   <=8~ 1,GLICADA.valor   >8  ~ 2))
+#---------------------------------------------------------------------------------------------------------------#
+
+
+#                                 
+#i)**Index de Massa Corporal->IMC.valor_cat: <15,[15-25),[25-30),>=30
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(IMC.valor_cat=case_when(IMC.valor   <15~ 1,
+#                                                      IMC.valor   >=15 & IMC.valor   <25 ~ 2,  
+#                                                     IMC.valor   >=25 & IMC.valor   <30 ~ 3,
+#                                                     IMC.valor   >=30  ~ 4))
+
+
+#[CODIS ANTERIORS]#                                          
+#---------------------------------------------------------------------------------------------------------------#
+#ix)**COLESTEROL TOTAL: cT.valor               
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(cT.valor_CAT=case_when(  cT.valor     <200~ 1,
+#                                                       cT.valor     >=200 & cT.valor     <=240 ~ 2,  
+#                                                      cT.valor     >240  ~ 3))
+#---------------------------------------------------------------------------------------------------------------#
+#x)**COLESTEROL HDL
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(cHDL.valor_CAT=case_when(cHDL.valor        <45~ 1,
+#                                                      cHDL.valor        >=45 & cHDL.valor        <=90 ~ 2,  
+#                                                      cHDL.valor        >90  ~ 3))
+#---------------------------------------------------------------------------------------------------------------#
+#iii)**#dt_plana<-dt_plana%>%mutate(PAS_PAD=PAS.valor/PAD.valor)
+#---------------------------------------------------------------------------------------------------------------#
+#eps!!!  ERROR!!?
+#tanto missing para PAS/ PAD 
+#es una de las variable que se recoge mejor en la bbdd 97.02% de prevalencia!!!
+#PAS/PAD: 6465
+#1. < 90/60 3 (0.05%)
+#2. [90/60-120/80) 520 (8.04%)
+#3. [120/80-140/90) 983 (15.2%)
+#4. >=140/90 210 (3.25%)
+#'Missing' 4749 (73.5)
+# ho far? d'aquesta manera:
+#1 PAS  <90               OR       PAD <60 
+#2 PAS [>=90  and <120]   OR       PAD [>=60 and <80]
+#3 PAS [>=120 and <140]   OR       PAD [>=80 and <90]
+#4 PAS  >=140             OR       PAD >=90
+#Ray, debería ser con AND no con OR,
+#PAS_PAD2
+#
+#dt_plana<-dt_plana%>%mutate(PAS_PAD2=case_when(
+#
+#                                                     
+#
+#                                                     (PAS.valor<90 and PAD.valor<60~ 1),
+#
+#                                                     (PAS.valor>=90 & PAS.valor<120) and (PAD.valor>=60 & PAD.valor<80) ~ 2,
+#                                                     (PAS.valor>=120 & PAS.valor<140) and (PAD.valor>=80 & PAD.valor<90) ~ 3,
+#                                                      (PAS.valor>=140 and PAD.valor>=90~ 4
+#
+#))
+#Ahora falta la categoría:
+#(PAS.valor<140 and PAD.valor<90~ 1
+#(PAS.valor>=140 and PAD.valor>=90~ 2
+#################################
+# eps rectificat!: #[12.07.2021]#
+#################################
+#
+#
+#
+#dt_plana<-dt_plana%>%mutate(PAS_PAD1=case_when(     PAS.valor<90  & PAD.valor<60~ 1,
+#                                                    PAS.valor>=140 | PAD.valor>=90~ 4,     
+#                                                    (PAS.valor>=120 & PAS.valor<140) | (PAD.valor>=80 & PAD.valor<90) ~ 3,
+#                                                    (PAS.valor>=90 & PAS.valor<120) | (PAD.valor>=60 & PAD.valor<80) ~ 2  ))
+#                                                     
+#
+#
+#
+#dt_plana<-dt_plana%>%mutate(PAS_PAD2=case_when(     PAS.mean<90  & PAD.mean<60~ 1,
+#                                                    PAS.mean>=140 | PAD.mean>=90~ 4,     
+#                                                    (PAS.mean>=120 & PAS.mean<140) | (PAD.mean>=80 & PAD.mean<90) ~ 3,
+#                                                    (PAS.mean>=90 & PAS.mean<120) | (PAD.mean>=60 & PAD.mean<80) ~ 2 ))
+#                                                     
+#(PAS<140 & PAS>120) | (PAD<90 & PAD>80) --> 3
+#(PAS<120 & PAS>90) | (PAD<80 & PAD>60) --> 2
+#
+#  dt_plana<-dt_plana%>%mutate(PAS_PAD1b=case_when(     (PAS.valor<90  & PAD.valor<60)~                                      "1.[PAS<90 i PAD<60]",      
+#                                                       (PAS.valor>=140 | PAD.valor>=90)~                                    "4.[PAS>=140 O PAD>=90]",                    #                                     (PAS.valor>=120 & PAS.valor<140) | (PAD.valor>=80 & PAD.valor<90) ~  "3.[PAS:[120-140) o PAD:[80-90)]",
+#                                                      (PAS.valor>=90 & PAS.valor<120)  | (PAD.valor>=60 & PAD.valor<80) ~  "2.[PAS:[90-120) o PAD:[60-80)]" )) 
+#                                                     
+# 
+#  dt_plana<-dt_plana%>%mutate(PAS_PAD2b=case_when(     (PAS.mean<90  & PAD.mean<60)~                                        "1.[PAS<90 i PAD<60]",      
+#                                                      (PAS.mean>=140 | PAD.mean>=90)~                                      "4.[PAS>=140 O PAD>=90]",     
+#                                                       (PAS.mean>=120 & PAS.mean<140) | (PAD.mean>=80 & PAD.mean<90) ~      "3.[PAS:[120-140) o PAD:[80-90)]",
+#                                                     (PAS.mean>=90 & PAS.mean<120)  | (PAD.mean>=60 & PAD.mean<80) ~      "2.[PAS:[90-120) o PAD:[60-80)]" )) 
+##################################################################################################################################
+#dt_plana<-dt_plana%>%mutate(PAS_PAD2b=case_when(      PAS.valor<90  & PAD.valor<60~ 1,
+#                                                      PAS.valor>=140 | PAD.valor>=90~ 4,
+#                                                     between(PAS.valor,90,119.9999)  | between(PAD.valor,60,79.9999) ~ 2, 
+#                                                     between(PAS.valor,120,140) | between(PAD.valor,80,90) ~ 3
+#                                                     ))  
+#
+##################################################################################################################################
+#df <- data.frame(ID = c(1:7),
+#                 Systolic = c(130,118,120,115,184,114,95),
+#                 Diastolic = c(80,76,80,74,107,69,72))
+#
+#df <- df %>%
+#      mutate(BPLevel = case_when(Systolic < 120 | Diastolic < 80 ~ "Normal",
+#                                 between(Systolic, 120, 139) | between(Diastolic, 80, 89)~ "Prehypertension",
+#                                 Systolic>=140 | Diastolic >= 90 ~ "Hypertension",
+#                                 TRUE ~ "Missing"
+#                                 ))
+##################################################################################################################################
+#
+#
+#
+# eps rectificat!: #[12.07.2021]#
+#PROVA<-dt_plana%>%select(idp,PAS.valor,PAD.valor,PAS_PAD2)
+#---------------------------------------------------------------------------------------------------------------#
+#iv)** MONOFIL_CAT
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(MONOFIL_CAT=case_when ( MONOFIL.valor<0.51 ~ 1,
+#                                                       (MONOFIL.valor >=0.51 & MONOFIL.valor<0.79)  ~ 2,
+#                                                       (MONOFIL.valor>=0.79 & MONOFIL.valor<0.91)  ~ 3,
+#                                                      (MONOFIL.valor>=0.91 & MONOFIL.valor<1.40)  ~ 4,
+#                                                      MONOFIL.valor>=1.40 ~ 5))
+#---------------------------------------------------------------------------------------------------------------#
+#v)**CREATINA_CAT
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(CREATININA.valor_CAT=case_when(  CREATININA.valor<1.2 ~ 1,     
+#                                                               CREATININA.valor>=1.2 ~ 2))
+#---------------------------------------------------------------------------------------------------------------#
+#vi)**FILTRADO GLOMERULAR :CKDEPI.valor  
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(CKDEPI.valor_CAT=case_when(CKDEPI.valor     <30~ 1,
+#                                                         CKDEPI.valor     >=30 & CKDEPI.valor     <60 ~ 2,  
+#                                                         CKDEPI.valor     >=60 & CKDEPI.valor     <90 ~ 3,
+#                                                       CKDEPI.valor     >=90  ~ 4))
+#---------------------------------------------------------------------------------------------------------------#
+#vii)**FILTRADO GLOMERULAR :CKDEPI.valor  
+#---------------------------------------------------------------------------------------------------------------#
+#10.2.2021.
+#  dt_plana<-dt_plana%>%mutate(CKDEPI.valor_CAT2=case_when(CKDEPI.valor     <30~ 1,
+#                                                         CKDEPI.valor     >=30 & CKDEPI.valor     <45 ~ 2,  
+#                                                         CKDEPI.valor     >=45 & CKDEPI.valor     <60 ~ 3,
+#                                                        CKDEPI.valor     >=60  ~ 4))
+#################################
+# eps rectificat!: #[12.07.2021]#
+#################################
+#---------------------------------------------------------------------------------------------------------------#
+#viiB)**FILTRADO GLOMERULAR :CKDEPI.valor  
+#---------------------------------------------------------------------------------------------------------------#
+#14.7.2021.
+#  dt_plana<-dt_plana%>%mutate(CKDEPI.valor_CAT3=case_when(CKDEPI.valor     <30~ 1,
+#                                                         CKDEPI.valor     >=30 & CKDEPI.valor     <60 ~ 2,
+#                                                         CKDEPI.valor     >=60  ~ 3))
+#---------------------------------------------------------------------------------------------------------------#
+#viii)**TRIGLICERIDOS
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(TG.valor_CAT=case_when(    TG.valor   >=0 & TG.valor   <=150 ~ 1,  
+#                                                        TG.valor   >150  ~ 2))
+#---------------------------------------------------------------------------------------------------------------#
+#ix)**COLESTEROL TOTAL: cT.valor               
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(cT.valor_CAT=case_when(  cT.valor     <200~ 1,
+#                                                       cT.valor     >=200 & cT.valor     <=240 ~ 2,  
+#                                                      cT.valor     >240  ~ 3))
+#---------------------------------------------------------------------------------------------------------------#
+#x)**COLESTEROL HDL
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(cHDL.valor_CAT=case_when(cHDL.valor        <45~ 1,
+#                                                      cHDL.valor        >=45 & cHDL.valor        <=90 ~ 2,  
+#                                                      cHDL.valor        >90  ~ 3))
+
+#---------------------------------------------------------------------------------------------------------------#
+#xi)**COLESTEROL LDL LDL.COLESTEROL.LDL, (<70, <100, >100, >130) 
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(cLDL.valor_CAT=case_when(cLDL.valor        <70~ 1,
+#                                                       cLDL.valor        >=70 & cLDL.valor        <130 ~ 2,  
+#                                                      cLDL.valor        >=130  ~ 3))
+#---------------------------------------------------------------------------------------------------------------#
+#xi.b)**COLESTEROL LDL LDL.COLESTEROL.LDL, <70 , 70-99, 100-129 y >o=130
+#---------------------------------------------------------------------------------------------------------------
+#  dt_plana<-dt_plana%>%mutate(cLDL.valor_CAT2=case_when(cLDL.valor       <70~ 1,
+#                                                       cLDL.valor        >=70 & cLDL.valor        <100 ~ 2,
+#                                                      cLDL.valor        >=100 & cLDL.valor        <130 ~ 3,
+#                                                      cLDL.valor        >=130  ~ 4))
+# en funcio si tenen ECV! [DG.CVD] + dem? fer conductor!
+#---------------------------------------------------------------------------------------------------------------#
+#xi.c)**COLESTEROL LDL LDL.COLESTEROL.LDL, <70 , 70-99, 100-129 y >o=130
+#---------------------------------------------------------------------------------------------------------------
+#  dt_plana<-dt_plana%>%mutate(cLDL.valor_CAT3_ECV=case_when(cLDL.valor   <70                            & DG.CVD==1 ~ 1,
+#                                                       cLDL.valor        >=70 & cLDL.valor        <100  & DG.CVD==1 ~ 2,
+#                                                       cLDL.valor        >=100 & cLDL.valor       <130  & DG.CVD==1 ~ 3,
+#                                                     cLDL.valor        >=130                          & DG.CVD==1 ~ 4))
+#  dt_plana<-dt_plana%>%mutate(cLDL.valor_CAT3_NO_ECV=case_when(cLDL.valor       <70                    & DG.CVD==0 ~ 1,
+#                                                       cLDL.valor        >=70 & cLDL.valor        <100 & DG.CVD==0 ~ 2,
+#                                                      cLDL.valor        >=100 & cLDL.valor       <130 & DG.CVD==0 ~ 3,
+#                                                       cLDL.valor        >=130                         & DG.CVD==0 ~ 4))
+#---------------------------------------------------------------------------------------------------------------
+#  dt_plana<-dt_plana%>%mutate(cLDL.valor_ECV=case_when(DG.CVD==1~cLDL.valor ))
+#  dt_plana<-dt_plana%>%mutate(cLDL.valor_NO_ECV=case_when(DG.CVD==0~cLDL.valor ))
+#---------------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------------#
+#xii)** PROTEINURIA
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(EXCPROTEINA.valor_CAT=case_when(EXCPROTEINA.valor        <30~ 1,
+#                                                              EXCPROTEINA.valor        >=30 & EXCPROTEINA.valor        <=300 ~ 2,  
+#                                                              EXCPROTEINA.valor        >300  ~ 3))
+#---------------------------------------------------------------------------------------------------------------#
+#xiii)**COECIENTE MICRO
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(CAC.valor_CAT=case_when(        CAC.valor       >=1 & CAC.valor        <31 ~ 1,
+#                                                              CAC.valor       >=31 & CAC.valor        <300 ~ 2,
+#                                                              CAC.valor       >=300  ~ 3))
+#################################
+# eps rectificat!: #[12.07.2021]#
+#################################
+#---------------------------------------------------------------------------------------------------------------#
+#xiiib)**COECIENTE MICRO
+#  dt_plana<-dt_plana%>%mutate(CAC.valor_CAT2=case_when(        CAC.valor       <30 ~ 1,
+#                                                              CAC.valor       >=31 & CAC.valor        <300 ~ 2,
+#                                                              CAC.valor       >=300  ~ 3))
+#---------------------------------------------------------------------------------------------------------------#
+#xiv)**HBA1C
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(GLICADA.valor_CAT=case_when(GLICADA.valor   <5.7~ 1,
+#                                                          GLICADA.valor   >=5.7 & GLICADA.valor   <7 ~ 2,  
+#                                                         GLICADA.valor   >=7 &   GLICADA.valor   <8.5 ~ 3,
+#                                                         GLICADA.valor   >=8.5 & GLICADA.valor   <10 ~ 4,
+#                                                          GLICADA.valor   >=10  ~ 5))
+#---------------------------------------------------------------------------------------------------------------#
+#xv)**GLUCOSA
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(GLUCOSA.valor_CAT=case_when(GLUCOSA.valor   <70~ 1,
+#                                                          GLUCOSA.valor   >=70 & GLUCOSA.valor   <100 ~ 2,  
+#                                                          GLUCOSA.valor   >=100 &   GLUCOSA.valor   <130 ~ 3,
+#                                                          GLUCOSA.valor   >=130  ~ 4))
+
+#---------------------------------------------------------------------------------------------------------------#
+##xvi)**HBA1C.Cambiar los rangos para HbA1c (<7, [7-10), >=10)
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(GLICADA_CAT2=case_when(GLICADA.valor   <7~ 1,
+#                                                     GLICADA.valor   >=7 & GLICADA.valor   <10 ~ 2,  
+#                                                     GLICADA.valor   >=10  ~ 3))
+#---------------------------------------------------------------------------------------------------------------#
+##xvii)**HBA1C.Cambiar los rangos para HbA1c (<7, [7-8),[8-) >=10)
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(GLICADA_CAT3=case_when(GLICADA.valor   <7~ 1,
+#                                                          GLICADA.valor   >=7 & GLICADA.valor   <8 ~ 2, 
+#                                                         GLICADA.valor   >=8 & GLICADA.valor   <10 ~ 3,  
+#                                                          GLICADA.valor   >=10  ~ 4))
+#---------------------------------------------------------------------------------------------------------------#
+##xviii)**HBA1C.Cambiar los rangos para HbA1c <6.5 [6.5-7) [7-8), [8-9), [9-10) ,>=10
+#---------------------------------------------------------------------------------------------------------------
+#  dt_plana<-dt_plana%>%mutate(GLICADA_CAT4=case_when(GLICADA.valor   <6.5~ 1,
+#                                                          GLICADA.valor   >=6.5 & GLICADA.valor   <7 ~ 2,  
+#                                                          GLICADA.valor   >=7 &   GLICADA.valor   <8 ~ 3,
+#                                                        GLICADA.valor   >=8 & GLICADA.valor   <9 ~ 4,
+#                                                          GLICADA.valor   >=9 & GLICADA.valor   <10 ~ 5,
+#  
+#  GLICADA.valor   >=10  ~ 6))
+#---------------------------------------------------------------------------------------------------------------#
+##xix)**TRIGLICERIDOS.TG (<150, >150)
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(TG.valor_CAT=case_when(    TG.valor   >=0 & TG.valor   <=150 ~ 1,  
+#                                                         TG.valor   >150  ~ 2))
+#  
+
+#---------------------------------------------------------------------------------------------------------------#
+##xx)
+#  dt_plana<-dt_plana%>%mutate(MON_SOB10D.valor2=MON_SOB10D.valor,
+#                              MON_SOB10E.valor2=MON_SOB10E.valor,
+#                              MON_SOB3D.valor2=MON_SOB3D.valor,
+#                              MON_SOB3E.valor2=MON_SOB3E.valor)
+#---------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(MON_PDRE.valor2=MON_PDRE.valor,
+#                              MON_PESQ.valor2=MON_PESQ.valor)
+#--------------------------------------------------------------------------------------------------------------#
+#dt_plana<-dt_plana%>%mutate(DG.HTA2=ifelse(DG.HTA==1  | FF.Hipotensores==1 ,1,0)) 
+#  dt_plana<-dt_plana%>%mutate(DG.HTA2=ifelse(DG.HTA==1  |
+#                                              FF.Hipotensores_altres ==1  |                   
+#                                              FF.Hipotensores_ANTICA ==1  |                    
+#                                              FF.Hipotensores_ARA    ==1  |                      
+#                                              FF.Hipotensores_BBK    ==1  |                    
+#                                              FF.Hipotensores_DIU    ==1  |                      
+#                                              FF.Hipotensores_IECA ,1,0)) 
+
+#--------------------------------------------------------------------------------------------------------------#
+#ii)* HIPERCOLESTEROLEMIA #
+##Hipercolesterolemia diagnostico registrado o tto hipolipemiante
+#"FF.Hipolipemiantes_altres"                 
+#"FF.Hipolipemiantes_ESTA"                  
+#"FF.Hipolipemiantes_EZE"                    
+#"FF.Hipolipemiantes_FIB"   
+#--------------------------------------------------------------------------------------------------------------#
+#dt_plana<-dt_plana%>%mutate(DG.Hipercol2=ifelse(DG.HCOL==1  | FF.Hipolipemiantes==1 ,1,0)) 
+#  dt_plana<-dt_plana%>%mutate(DG.Hipercol2=ifelse(DG.HCOL==1  | FF.Hipolipemiantes_altres==1  |                 
+#                                                                FF.Hipolipemiantes_ESTA  ==1  |                   
+#                                                                FF.Hipolipemiantes_EZE   ==1  |        
+#                                                                FF.Hipolipemiantes_FIB   ==1,1,0)) 
+#--------------------------------------------------------------------------------------------------------------#
+#--------------------------------------------------------------------------------------------------------------#
+#iv)
+#--------------------------------------------------------------------------------------------------------------#
+#Nefropatia diabetica: [diagnostico nefropatia diabetica y(diagnostico de insuficiencia #renal y/o proteinuria y/o  [FG, FG<60 y/o CAC>30])
+# corregit els dia 1.xi.2020!!!
+#  dt_plana<-dt_plana%>%mutate(DG.NEFRPDM3=ifelse(  DG.NEFRPDM==1 | ( 
+#                                                    DG.INS_REN_AG==1 | 
+#                                                    DG.INS_RNC  ==1  | 
+#                                                    CKDEPI.valor<60  |
+#                                                    CAC.valor>30     |
+#                                        !is.na(EXCPROTEINA.valor))   ,
+#                                        1,0)) 
+#--------------------------------------------------------------------------------------------------------------#
+##v)* Nefropatia diabe?tica: diagnostico + CAC>300  mg/24h
+#--------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(DG.NEFRPDM2=ifelse(DG.NEFRPDM==1 & CAC.valor>300 ,1,0)) 
+#table(dt_plana$DG.NEFRPDM2)
+#--------------------------------------------------------------------------------------------------------------#
+##vi)*Arteriopatia periferica : diagnostico registrado o el valor de ITB (<0.9)
+#--------------------------------------------------------------------------------------------------------------#
+#  dt_plana<-dt_plana%>%mutate(DG.ARTPER2=ifelse(DG.ARTPER==1 | (ITB_Dret.valor<0.9),1,0))
+#--------------------------------------------------------------------------------------------------------------#
+
+##III)Combinacions#
+
+
+#
+
+
+
+#[CODIS ANTERIORS]#
+##IV) Tractament##
+#------------------------------#
+#i)     ADO->FF.Ado
+#------------------------------#
+#1.     FF.Biguanidas     
+#2.     FF.Sulfonilureas
+#3.     FF.Glinides
+#4.     FF.Tiazolidinadiones 
+#5.     FF.ISGLT2
+#6.     FF.IDPP4  
+#7.     FF.OtrAntidiabOrales 
+#8.     FF.InAlfaGluc
+#9.     FF.Combinaciones 
+#------------------------------#
+#ii)    INSULINAS->FF.Insul
+#------------------------------#
+#1.     FF.InAccInt           
+#2.     FF.InAccLenta         
+#3.     FF.InAccRapida  
+#4.     FF.InMixta  
+#------------------------------#
+#iii)   ADO+INSULINAS-->FF.Ado+FF.Insul
+#------------------------------#
+#1.     i)     ADO          
+#2.     ii)    INSULINAS
+#  dt_plana<-dt_plana%>%mutate(FF.Ado.INSULINAS=ifelse(FF.Ado==1 | FF.Insul==1,1,0))
+## Grups d'edat per cada 5 anys desde 20 fins major de 90
+#  dt_plana<-dt_plana%>% mutate(age5.cat=cut2(age,seq(20,90,5),right = F))
+#dt_plana<-dt_plana%>% mutate(ruralitat=if_else(ruralitat=="","ND",ruralitat))
+#  dt_plana<-dt_plana%>% mutate(age6.cat=case_when(age<75~0,age >=75~ 1))
+#  dt_plana<-dt_plana%>% mutate(age7.cat=case_when(age<=75~0,age >75~ 1))
+############
+#31.12.2018#
+############
+################################################
+#
+#
+# 26.10.2021:
+#  dt_plana<-dt_plana%>%mutate(count_NIAD_ADO=(FF.Biguanidas+FF.Sulfonilureas+
+#                                                FF.Glinides+
+#                                                FF.Tiazolidinadiones+
+#                                                FF.ISGLT2+
+#                                                FF.IDPP4+
+#                                                FF.OtrAntidiabOrales+
+#                                                FF.InAlfaGluc+
+#                                                FF.aGLP1))
+#
+#
+################################################
+#  #2013,2012,2011,2010,2009,2008.......[falla FF.ISGLT2!!]
+#6.4.2021 nom?s Insulina!          
+#dt_plana<-dt_plana%>%mutate(monoInsulina_c=ifelse(count_NIAD_ADO==0 & FF.Insul==1 ,1,0))
+#dt_plana<-dt_plana%>%mutate(poliInsulina_c=ifelse(count_NIAD_ADO>=1 & FF.Insul==1 ,1,0))
+#6.4.2021 sense Insulina!
+#dt_plana<-dt_plana%>%mutate(count_NIAD_ADO=ifelse(FF.Insul==1 ,0,count_NIAD_ADO))
+#
+#table(dt_plana$count_NIAD): mirar-ho!! count_NIAD_ADO>=1 | FF.Insul==1~ 6
+#################################################################################################
+#  dt_plana<-dt_plana%>% mutate(count_NIAD_ADO_CAT=case_when(
+#                                                        
+#                                                        count_NIAD_ADO==0 & FF.Insul==0 ~0,
+#                                                        count_NIAD_ADO==1 & FF.Insul==0~ 1,
+#                                                        count_NIAD_ADO==2 & FF.Insul==0~ 2,
+#                                                        count_NIAD_ADO>=3 & FF.Insul==0~ 3,
+#                                                        count_NIAD_ADO==0 & FF.Insul==1~ 4,
+#                                                        count_NIAD_ADO>=1 & FF.Insul==1~ 5))
+#  dt_plana<-dt_plana%>% mutate(INSUL_90=FF.Insul)
+#################################################################################################   
+#  table(dt_plana$count_NIAD_ADO_CAT)
+#  dt_plana<-dt_plana%>%mutate(count_Antidiabeticos=FF.Biguanidas+
+#                                FF.Sulfonilureas+
+#                                FF.Glinides+
+#                                FF.Tiazolidinadiones+
+#                               FF.ISGLT2+
+#                                FF.IDPP4+
+#                                FF.OtrAntidiabOrales+
+#                                FF.InAlfaGluc+
+#                                FF.aGLP1+
+#                                FF.Insul)
+#  dt_plana<-dt_plana%>% mutate(count_Antidiabeticos_CAT=case_when(count_Antidiabeticos==0~0,count_Antidiabeticos>=1~ 1))
+################################################
+# finestra 1 any! 365 dies,                   ##
+################################################
+#
+#
+#30.3.2021
+#
+#  dt_plana<-dt_plana%>%mutate(count_NIAD_ADO_365=(  F365.Biguanidas+
+#                                                    F365.Sulfonilureas+
+#                                                    F365.Glinides+
+#                                                    F365.Tiazolidinadiones+
+#                                                    F365.ISGLT2+
+#                                                    F365.IDPP4+
+#                                                    F365.OtrAntidiabOrales+
+#                                                    F365.InAlfaGluc+
+#                                                    F365.aGLP1))
+#
+#table(dt_plana$count_NIAD)
+#  dt_plana<-dt_plana%>% mutate(count_NIAD_ADO_CAT_365=case_when(
+#                                                        count_NIAD_ADO_365==0 & F365.Insul==0 ~0,
+#                                                        count_NIAD_ADO_365==1 & F365.Insul==0~ 1,
+#                                                        count_NIAD_ADO_365==2 & F365.Insul==0~ 2,
+#                                                        count_NIAD_ADO_365>=3 & F365.Insul==0~ 3,
+#                                                        count_NIAD_ADO_365==0 & F365.Insul==1~ 4,
+#                                                        count_NIAD_ADO_365>=1 & F365.Insul==1~ 5))
+#  dt_plana<-dt_plana%>% mutate(INSUL_365=F365.Insul)
+#  dt_plana<-dt_plana%>%mutate(count_Antidiabeticos_365=F365.Biguanidas+
+#                                F365.Sulfonilureas+
+#                                F365.Glinides+
+#                                F365.Tiazolidinadiones+
+#                                F365.ISGLT2+
+#                                F365.IDPP4+
+#                                F365.OtrAntidiabOrales+
+#                                F365.InAlfaGluc+
+#                                F365.aGLP1+F365.Insul)
+#  dt_plana<-dt_plana%>% mutate(count_Antidiabeticos_CAT_365=case_when(count_Antidiabeticos_365==0~0,count_Antidiabeticos_365>=1~ 1))
+# a prtir dels grups!!
+#els valors de mitjana dhemoglobina glicada per cada un dels esglaons que us he comentat previament
+#(no-drugs, monoterapia, 
+#combinada ADNIS, insulina sola i insulina en combinaci? amb ADNIS) que son #dades que ja 
+#No se si es molt demanar que ho calculeu, po ser 
+# ?  a BOGDAN 
+# count_NIAD:0 ?
+# count_NIAD:1
+# count_NIAD:2
+# insulina sola: FF.Insul
+# insulina en combinaci? amb ADNIS: FF.Insul+FF.Niad
+#[30.3.2021]
+#[06.04.2021]
+###################################################################################
+#Els percentatges haurien de ser sobre el total de pacients de cada fila (PP o PS)#
+###################################################################################
+#INDICADOR CONJUNTO (HBA1C, PA, LDL) SEGONS PP O PS I
+#Con Criterios para PA y HbA1c <  (PP1 y PS1) o bien  < o = (PP2 y PS2) y con LDL<130 en PP y <100 en PS
+#
+# QUAN TENIM "&" , quan hi ha un missing, tot ?s missing!, per aix? aquest 52 casos!!!.
+#dt_plana<-dt_plana%>%mutate(PAS_PAD3=case_when(       PAS.valor<140 & PAD.valor<90~ 1,
+#                                                      PAS.valor>=140 & PAD.valor>=90~ 2)  )
+#dt_plana<-dt_plana%>%mutate(PAS_PAD4=case_when(       PAS.valor<=140 & PAD.valor<=90~ 1,
+#                                                      PAS.valor>140 & PAD.valor>90~ 2)  )
+# per separat:!!!
+#8.4.2021:
+############################################################################################################################
+#  dt_plana<-dt_plana%>%mutate(PAS_PAD3=case_when(       PAS.valor<140 & PAD.valor<90~ 1,
+#                                                        PAS.valor>=140 & PAD.valor>=90~ 2)  )
+############################################################################################################################
+#  dt_plana<-dt_plana%>%mutate(PAS_PAD4=case_when(       PAS.valor<=140 & PAD.valor<=90~ 1,
+#                                                        PAS.valor>140 & PAD.valor>90~ 2)  )
+############################################################################################################################
+#dt_plana<-dt_plana%>%mutate(GLICADA_N=ifelse(!is.na(GLICADA.valor) | 
+#                                                 !is.na(PAS.valor) | 
+#                                                 !is.na( PAD.valor) | 
+#                                                 !is.na(cLDL.valor) ,0,NA))
+#  dt_plana<-dt_plana%>%mutate(GLICADA_N=ifelse(!is.na(GLICADA.valor) &  
+#                                                   !is.na(PAS.valor) &  
+#                                                   !is.na( PAD.valor) &  
+#                                                   !is.na(cLDL.valor) ,0,NA))
+#GAireb? si:  PS (prev secundaria) son  els que tenen MCV 
+#i en els que apliquem el criteri mes estricte de LDL<100
+#i els de PP (prev primaria) el criteri de LdL<130 (menys estricte perque tenen menys risc CV).
+#Per? fixat que hem fet els calculs tan per <130 com per <100, 
+#per tant la definici? correcta es que tinguin o no MCV (si la tenen es PS i si no es PP).
+#? BOGDAN......................................................................................
+#
+#
+#
+#
+#PrevenciO SecundUria![CardioVasculars]
+#  dt_plana<-dt_plana%>%mutate(GLICADA_N_PS=ifelse(!is.na(GLICADA.valor) &  
+#                                                   !is.na(PAS.valor) &  
+#                                                  !is.na( PAD.valor) &  
+#                                                  !is.na(cLDL.valor) &
+#                                                  DG.CVD==1,0,NA))
+#PrevenciO PrimAria![No CardioVasculars]
+#  dt_plana<-dt_plana%>%mutate(GLICADA_N_PP=ifelse(!is.na(GLICADA.valor) &  
+#                                                   !is.na(PAS.valor) &  
+#                                                   !is.na( PAD.valor) &  
+#                                                   !is.na(cLDL.valor) &
+#                                                    DG.CVD==0,0,NA))
+#table(dt_plana$GLICADA_N)
+#table(dt_plana$GLICADA_N_PS)
+#table(dt_plana$GLICADA_N_PP)
+#Prevencio Secundaria![PS]
+#i)
+#  dt_plana<-dt_plana%>% mutate(GLICADA_CAT5a=case_when(GLICADA.valor <7 & 
+#                                                       PAS_PAD3==1 & 
+#                                                       cLDL.valor<100~1,
+#                                                       GLICADA_N==0  ~0))
+#ii)
+#  dt_plana<-dt_plana%>% mutate(GLICADA_CAT5b=case_when(GLICADA.valor <7  &  
+#                                                       PAS_PAD3==1 & 
+#                                                      cLDL.valor<100 & 
+#                                                       DG.CVD==1~1,
+#                                                     GLICADA_N==0  ~0))
+#iib)
+#  dt_plana<-dt_plana%>% mutate(GLICADA_CAT5_PS=case_when(GLICADA.valor <7  &  
+#                                                       PAS_PAD3==1 & 
+#                                                       cLDL.valor<100 & 
+#                                                      DG.CVD==1~1,
+#                                                       GLICADA_N_PS==0  ~0))
+###########################################################################################
+#Prevencio Primaria![PP]
+#iii)
+#  dt_plana<-dt_plana%>% mutate(GLICADA_CAT5c=case_when(GLICADA.valor <7 & 
+#                                                      PAS_PAD3==1 & 
+#                                                       cLDL.valor<130~1,
+#                                                       GLICADA_N==0  ~0))
+#iv)
+#  dt_plana<-dt_plana%>% mutate(GLICADA_CAT5d=case_when(GLICADA.valor <7  &  
+#                                                       PAS_PAD3==1 & 
+#                                                       cLDL.valor<130 & 
+#                                                       DG.CVD==0~1,
+#                                                       GLICADA_N==0  ~0))
+#IVb)
+#  dt_plana<-dt_plana%>% mutate(GLICADA_CAT5_PP=case_when(GLICADA.valor <7  &  
+#                                                       PAS_PAD3==1 & 
+#                                                       cLDL.valor<130 & 
+#                                                       DG.CVD==0~1,
+#                                                       GLICADA_N_PP==0  ~0))
+#  
+###########################################################################################
+#                                                 
+#table(dt_plana$GLICADA_CAT5a)
+#table(dt_plana$GLICADA_CAT5b)
+#table(dt_plana$GLICADA_CAT5c)
+#table(dt_plana$GLICADA_CAT5d)
+#table(dt_plana$GLICADA_CAT5e)
+#table(dt_plana$GLICADA_CAT5f)
+#
+###########################################################################################
+#################################
+# eps rectificat!: #[12.07.2021]#
+#################################
+##LDL<100 para todos y distribución por valores en PP o PS 
+#
+#LDL<130, <100 y <70 en PP
+##LDL<130, <100,   <100 y <7O  en PS
+#corregit : 15.7.2021 demà copiar-ho al PC Jordi.#
+#V)
+#  dt_plana<-dt_plana%>%mutate(LDL_100=ifelse(cLDL.valor<100 ,1,0)) 
+#
+
+#Vi)
+#  dt_plana<-dt_plana%>%mutate(LDL_PP_130=ifelse(DG.CVD==0 & cLDL.valor<130 ,1,0)) 
+#  dt_plana<-dt_plana%>%mutate(LDL_PP_100=ifelse(DG.CVD==0 & cLDL.valor<100 ,1,0)) 
+#  dt_plana<-dt_plana%>%mutate(LDL_PP_70=ifelse(DG.CVD==0 & cLDL.valor<70 ,1,0)) 
+#Vii)
+#  dt_plana<-dt_plana%>%mutate(LDL_PS_130=ifelse(DG.CVD==1 & cLDL.valor<130 ,1,0)) 
+#  dt_plana<-dt_plana%>%mutate(LDL_PS_100=ifelse(DG.CVD==1 & cLDL.valor<100 ,1,0)) 
+#  dt_plana<-dt_plana%>%mutate(LDL_PS_70=ifelse(DG.CVD==1 & cLDL.valor<70 ,1,0)) 
+#variable.names(dt_plana)
+#vii) convertim  els Na , en una variable DICOTOMICA (0,1)! del DG. (Diagnostics!)
+#  dt_plana<-mutate_at(dt_plana, vars( starts_with("DG.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+#  dt_plana<-mutate_at(dt_plana, vars( starts_with("FF.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+#  dt_plana<-mutate_at(dt_plana, vars( starts_with("FFF.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+#  dt_plana<-mutate_at(dt_plana, vars( starts_with("F365.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+#  dt_plana<-mutate_at(dt_plana, vars( starts_with("INCLUSIO.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+#################################
+# eps rectificat!: #[12.07.2021]#
+#################################
+#  dt_plana<-mutate_at(dt_plana, vars( starts_with("LDL_PP_") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+#  dt_plana<-mutate_at(dt_plana, vars( starts_with("LDL_PS_") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+#corregit : 15.7.2021 demà copiar-ho al PC Jordi.#
+#viii) corregit : 15.7.2021:
+#
+#
+#
+#
+#
+#
+#
+#
+#  dt_plana<-mutate_at(dt_plana, vars( starts_with("LDL_100") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+#  dt_plana<-dt_plana%>%mutate(PAS_PAD1c=case_when(     (PAS.valor<90  & PAD.valor<60)~                                      "0.<>[PAS>=140 O PAD>=90]",# #       
+#                                                       (PAS.valor>=140 | PAD.valor>=90)~                                    "1.  [PAS>=140 O PAD>=90]", #      
+#                                                       (PAS.valor>=120 & PAS.valor<140) | (PAD.valor>=80 & PAD.valor<90) ~  "0.<>[PAS>=140 O PAD>=90]",
+#                                                      (PAS.valor>=90 & PAS.valor<120)  | (PAD.valor>=60 & PAD.valor<80) ~  "0.<>[PAS>=140 O PAD>=90]" )) 
+#  dt_plana<-dt_plana%>%mutate(PAS_PAD2c=case_when(     (PAS.mean<90  & PAD.mean<60)~                                        "0.<>[PAS>=140 O PAD>=90]", #        
+#                                                      (PAS.mean>=140 | PAD.mean>=90)~                                      "1.  [PAS>=140 O PAD>=90]", #     
+#                                                       (PAS.mean>=120 & PAS.mean<140) | (PAD.mean>=80 & PAD.mean<90) ~      "0.<>[PAS>=140 O PAD>=90]",
+#                                                       (PAS.mean>=90 & PAS.mean<120)  | (PAD.mean>=60 & PAD.mean<80) ~      "0.<>[PAS>=140 O PAD>=90]" ))  
+#
+#dt_plana<-dt_plana%>%mutate(PAS_PAD1c=ifelse(PAS.valor>=140 | PAD.valor>=90 ,1,0))
+#dt_plana<-dt_plana%>%mutate(PAS_PAD2c=ifelse(PAS.mean>=140  | PAD.mean>=90  ,1,0))
+#
+#
+#
+#########################################################################################################
+#dt_plana<-mutate_at(dt_plana, vars( starts_with("PAS_PAD1c") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+#dt_plana<-mutate_at(dt_plana, vars( starts_with("PAS_PAD2c") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+#########################################################################################################
+
+```
+
+
+## 4. Salvar tabla plana
+```{r salvar}
+
+saveRDS(dt_plana, file=here::here(params$dir_dades_desti,"dt_plana2.rds"))
+
+```

@@ -1,0 +1,258 @@
+---
+title: 'Analisi transversal descriptiu HTG.Data de tall: `r params$ANY`'
+author: "Jordi Real & Rai Puig"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_document:
+    css: logos_css/usr_styles.css
+    fig_caption: yes
+    toc: yes
+    toc_float: yes
+  pdf_document: default
+  word_document:
+    toc: yes
+params:
+   dir_dades_desti: "dades/mostra"  # "dades/poblacio
+   ANY: '2019'
+   website: https://github.com/USR-DAPCAT/
+---
+&nbsp;
+<script>
+   $(document).ready(function() {
+     $head = $('#header');
+     $head.prepend('<img src=\"https://www.idiapjgol.org/images/logo.png\" style=\"float: right ;width: 130px;\"/>')
+     $head.prepend('<img src=\"https://avatars2.githubusercontent.com/u/57066591?s=200&v=4\" style=\"margin-left:25% ;width: 80px;\"/>')
+     $head.prepend('<img src=\"logos_css/logoDAP_Cat.png\" style=\"float: left:1;width: 185px;\"/>')
+   });
+</script>
+
+
+<div class="watermark">DRAFT</div>
+
+****
+
+## 0. Estat:
+
+**agregacions i part global descriptiva**
+
+
+&check; Dates d'inclusió (DINDEX): L'estudi I: La data d'inclusió serà la primera determinació de triglicèrids per cada any natural de cada tall transversal[2010,2013,2016,2019] <br/>
+&check; En cas de més de una TG s'agafa la TG major per any <br/>
+&check; Criteris d'inclusió: <br/>
+&check; -Usuari del sistema de salut actiu inclosa a SIDIAP amb una data d'entrada al sistema mínima d'un any en data d'inclusió <br/>
+&check; -Tenir com a mínim una determinació de triglicèrids <br/>
+
+&check; Dm2 debut: min.date(dt_index1,dt_index2,dt_index3) <br/>
+&check; Problemes de SALUT:[dtagr_diagnostics_HTG] finestra.dies=c(-Inf,0) <br/>
+&check; Facturacio:[dtagr_facturat_HTG] [finestra.dies=c(-365,+30)] <br/>
+&check; Prescripcio:[dtagr_prescrip_HTG] [finestra.dies=c(-30,+30)] <br/>
+&check; dt_variables_HTG=dt_analitiques+dt_cliniques [finestra.dies = c(-365,+30)] <br/>
+&check; dtagr_variables_HTG2=filter (cod=="TG")[finestra.dies = c(-365,0)]max.valor <br/>
+&check; dt_tabaquisme [finestra.dies = c(-365,0)] <br/>
+&check; Revisio missings de pacients amb HDL  de pacients Greus i Molt Greus  HTG <br/>
+&check; Fer les grafiques de Distribucio dels valors TG de manera adequada % <br/>
+&check; Aplicar els canvis que hagin fet al Conductor. <br/>
+&check; Dm-Gestacional= ha estar embarassada al moment de la DM. <br/>
+&check; DIABETIS 3 Grups[DM1,DM2, DM-altres) <br/>
+&check; Nomes farmacs prescrits (FP) <br/>
+&check; A les Causes Secundaries, la DM  mal controlada, sera Glicada>8 <br/>
+&check; A taula Descriptiva General (Taula00 del conductor), hi hem afegir els BLOCS (Bloc 0,Bloc1,Bloc2,Bloc3) <br/>
+&check; Regions del mon WHO <br/>
+&check; Variable a crear COLESTASIS 1-50:COLESTASIS=0//50-100:COLESTASIS=1//>100:COLESTASIS=2 <br/>
+&check; HTG_COLESTASIS=1 IF COLESTATIS =1 or COLESTATIS =2; HTG_COLESTASIS=0 IF COLESTATIS =0 <br/>
+&check; Crear la variable IMC <25/25-30/>=30 <br/>
+&check; Bloc 1 o HTG secundaria primer esglao: : alcohol, IMC > 30 (>27.5 si ets asiatic), diabetis amb HbA1c > 8% (HbA1c >8)  <br/>
+&check; Bloc 2 o HTG secundaria segon  esglao: : Bloc1+hepatopatia+nefropatia (Chronic Renal Insufficiency GFR <60 or CAC> 300,o	FG<60,o	CAC>300,o	Hepatic steatosis,o	Hemochromatosis,o	HTG_COLESTASIS) <br/>
+&check; Bloc 3 o HTG secundaria tercer  esglao: : Bloc1+Bloc2+Mental diseases+o	Drugs that cause HTG[FP]+Drugs Acidretino[FP]+Antipsictics+Drugs[FP]+CICLOSPOR[FP]+EsteriodesDrugs[FP]+ESTROGEN[FP]+Sistemicas(DG.TRAST_SIST)+HIV+Thyrotropin>10+Cancer <br/> 
+&check; Bloc 0 o HTG primaries:Tots els que no estiguin als BLOC1,BLOC2,BLOC3 <br/>
+&check; Descriptiva General i per Blocs <br/>
+&check; Descriptiva Exploratoria HTG  per  Blocs.ComprovaciO de les variables que tenim als bloc <br/>
+
+
+
+
+Març / 2022
+
+&check; Hem fet el BLOC0 dels punts 3.7,3.8, i 3.10 (que faltaven) <br/>
+&check; Hem canviat la gràfica de la Distribucio de Triglicerids, mes amena <br/>
+&check; S ha fet un Blox-plot de la distribucio dels triglicerids agrupats en edat i sexe <br/>
+&check; S ha  agafat com a referencia Europa i no Africa, a la variable pais<br/>
+&check; s'ha executat els 4 talls,2010,2013,2016, i 2019 <br/>
+
+
+Desembre / 2021
+
+&check; Haviem canviat                   (==0  | is.na(.),0,1)  DG.,FF.,FP.,EMB3 <br/>
+&check; Hem canviat despres de la reunio (==0  | is.na(.),0,1)  HbA1c_7,HbA1c_8,TSH.10,HTG_COLESTASIS,ALCOHOL_CS,BLOC1,BLOC2,BLOC3 <br/>
+&check; Hem canviat hem rectificat DG.ENF_MENTAL a DG.ENF_MENTAL_G.  <br/>
+&check; Hem aplicat 5 Grups  <br/>
+&check; Bloc Secundari, traiem embaràs  <br/>
+&check; Afegir Edat+Tg continues <br/>
+
+
+ 
+**Pendents**
+
+&check; Revisio i depuracio errors.   <br/>
+
+# Fase de validacio de base
+
+## Fase Preparacio
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE, include=F,size="huge")
+
+# Notació no cientifica dels numeros
+options(scipen = 999)
+
+gc()
+
+
+
+
+#######################################################
+#
+#
+# libreries i funcions
+library("dplyr")
+library("lubridate")
+library("compareGroups")
+library("sjPlot")
+library("tableone")
+library("magrittr")
+library("ggplot2")
+library("scales")
+#
+#
+# Descarregar funcions github -
+link_source<-paste0("https://github.com/jrealgatius/Stat_codis/blob/master/funcions_propies.R","?raw=T")
+devtools::source_url(link_source)
+#######################################################
+#conductor_codis<-here::here("codis_peucat.xlsx")
+#conductor<-here::here("conductor_Epipeu.xlsx")
+#
+#
+#
+############
+#17.02.2021#
+############
+#conductor_codis<-here::here("Cataleg_HTG.xlsx")
+
+conductor_codis2<-here::here("Cataleg_HTG_BIG.xlsx")
+conductor<-here::here("conductor_HTG.xlsx")
+```
+
+```{r llegir, include = FALSE}
+# Llegir plana
+
+dades<-readRDS(here::here(params$dir_dades_desti,"dt_plana2.rds")) %>% as_tibble()
+
+
+```
+
+
+## Etiquetar
+```{r etiquetes}
+
+
+
+dades<-dades%>%mutate(exclusio1=DG.Exclusion)
+dades<-dades%>%mutate(exclusio2=ifelse(dtindex==sortida & situacio!="A",1,0))
+
+
+#Etquetem (Si/No)  a partir del Conductor!
+dades<-factoritzar.NO.SI(dades,"factor",conductor)
+
+
+
+
+
+```
+## 1. Flow chart 
+```{r Flow chart, include=T}
+
+
+
+flow_chart1<-criteris_exclusio_diagrama(dt=dades,
+                                        taulavariables=conductor,
+                                        criteris = "exc_pre",
+                                        ordre="exc_ordre",
+                                        grups=NA,
+                                        etiquetes="descripcio2",
+                                        sequencial = T,
+                                        pob_lab=c("epiTempus DM2  ","epiTempus DM2 without exclusions"),
+                                        colors=c("white","grey"),
+                                        forma=c("ellipse","box"))
+
+flow_chart1
+
+
+
+
+
+
+#  Recodificar automaticament a partir del Conductor!
+#  dt_plana<-recodificar(dt_plana,taulavariables =conductor,"recode",missings = T)
+
+
+#Etquetem  VALORS! de les VAR  a partir del Conductor!
+#dades<-etiquetar_valors(dt=dades,variables_factors=conductor,fulla="etiquetes",camp_etiqueta="etiqueta1")
+
+
+# Cat referencia
+dades<-dades %>% refcat(conductor = conductor,ref="refcat")
+
+
+
+
+
+#Apliquem les EXCLUSIONS!
+dades<-criteris_exclusio(dades,taulavariables=conductor,criteris="exc_pre")
+
+
+#Etquetem  NOMS! de les  VAR  a partir del Conductor!
+dades<-etiquetar(dades,taulavariables=conductor,camp_descripcio="descripcio2")
+
+
+#Etquetem  NOMS! de les  VAR  a partir del Conductor!
+dades<-etiquetar(dades,camp_descripcio="descripcio1",taulavariables=conductor)
+
+
+
+
+descrTable(TG.valor_CAT4~., dades,method = 2,Q1=0,Q3=1,extra.labels = c("","","")) %>% export2md()
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
+## 4. Salvar taula plana
+
+saveRDS(dades, file=here::here(params$dir_dades_desti,"dt_plana_exc.rds"))
+
+```
+&nbsp;
+<hr />
+<p style="text-align: center;">A work by $Jordi Real$ $Rai Puig$ </a></p>
+<p style="text-align: center;">$Llepali System$ </a></p>
+<p style="text-align: center;"><span style="color: #808080;"><em><https://github.com/USR-DAPCAT/></em></span></p>
+
+
+
