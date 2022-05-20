@@ -50,7 +50,7 @@ gc()
 load("codi/params.Rdata")
 #--------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------------------------------------#
-rmarkdown::render(input="./codi/2_preparacio_HTG.RMD",
+rmarkdown::render(input="./codi/2_preparacio.RMD",
                   output_file=paste0(here::here("resultats/Informe_preparcio_HTG_"),nom_output,Sys.Date()),
                   params = list(dir_dades_desti=dir_dades_desti))
 
@@ -64,7 +64,7 @@ load("codi/params.Rdata")
 #--------------------------------------------------------------------------------------------------#
 
 #--------------------------------------------------------------------------------------------------#
-rmarkdown::render(input="./codi/3_analisi_HTG.RMD",
+rmarkdown::render(input="./codi/3_analisi.RMD",
                   output_file=paste0(here::here("resultats/Informe_Exploratori_HTG1_"),ANY,"_",nom_output,Sys.Date()),
                   params = list(dir_dades_desti=dir_dades_desti,ANY=ANY))
 #--------------------------------------------------------------------------------------------------#
@@ -112,7 +112,7 @@ gc()
 load("codi/params.Rdata")
 
 #--------------------------------------------------------------------------------------------------# 
-rmarkdown::render(input="./codi/1_lectura_gran_funcio.RMD",
+rmarkdown::render(input="./codi/1_lectura.RMD",
                   output_file=paste0(here::here("resultats/Informe_Lectura_HTG_"),nom_output,Sys.Date()),
                   params = list(dir_dades_desti=dir_dades_desti ,dir_dades_origen=dir_dades_origen,
                                 bd.dindex1=data_inici,bd.dindex2=data_final))
@@ -124,7 +124,7 @@ gc()
 load("codi/params.Rdata")
 #--------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------------------------------------#
-rmarkdown::render(input="./codi/2_preparacio_HTG.RMD",
+rmarkdown::render(input="./codi/2_preparacio.RMD",
                   output_file=paste0(here::here("resultats/Informe_preparcio_HTG_"),nom_output,Sys.Date()),
                   params = list(dir_dades_desti=dir_dades_desti))
 
@@ -137,7 +137,7 @@ load("codi/params.Rdata")
 #--------------------------------------------------------------------------------------------------#
 
 #--------------------------------------------------------------------------------------------------#
-rmarkdown::render(input="./codi/3_analisi_HTG.RMD",
+rmarkdown::render(input="./codi/3_analisi.RMD",
                   output_file=paste0(here::here("resultats/Informe_Exploratori_HTG2_"),ANY,"_",nom_output,Sys.Date()),
                   params = list(dir_dades_desti=dir_dades_desti,ANY=ANY))
 #--------------------------------------------------------------------------------------------------#
