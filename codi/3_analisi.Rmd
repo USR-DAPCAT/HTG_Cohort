@@ -152,8 +152,8 @@ dades<-readRDS(here::here(params$dir_dades_desti,"dt_plana2.rds")) %>% as_tibble
 ```
 
 
-## Etiquetar
-```{r etiquetes}
+## Etiquetar1
+```{r etiquetes1}
 
 
 
@@ -187,36 +187,37 @@ flow_chart1<-criteris_exclusio_diagrama(dt=dades,
 
 flow_chart1
 
+```
 
 
+## Etiquetar2
+```{r etiquetes2}
 
+dades<-dades%>%mutate(exclusio1=DG.Exclusion)
+dades<-dades%>%mutate(exclusio2=ifelse(dtindex==sortida & situacio!="A",1,0))
 
+#Etquetem (Si/No)  a partir del Conductor!
+ #dades<-factoritzar.NO.SI(dades,"factor",conductor)
 
-#  Recodificar automaticament a partir del Conductor!
-#  dt_plana<-recodificar(dt_plana,taulavariables =conductor,"recode",missings = T)
-
-
-#Etquetem  VALORS! de les VAR  a partir del Conductor!
-#dades<-etiquetar_valors(dt=dades,variables_factors=conductor,fulla="etiquetes",camp_etiqueta="etiqueta1")
-
-
-# Cat referencia
+#Cat referencia
 dades<-dades %>% refcat(conductor = conductor,ref="refcat")
-
-
-
-
 
 #Apliquem les EXCLUSIONS!
 dades<-criteris_exclusio(dades,taulavariables=conductor,criteris="exc_pre")
 
-
 #Etquetem  NOMS! de les  VAR  a partir del Conductor!
 dades<-etiquetar(dades,taulavariables=conductor,camp_descripcio="descripcio2")
 
+#Etquetem  VALORS! de les VAR  a partir del Conductor!
+dades<-etiquetar_valors(dt=dades,variables_factors=conductor,fulla="etiquetes",camp_etiqueta="etiqueta1")
 
-#Etquetem  NOMS! de les  VAR  a partir del Conductor!
-dades<-etiquetar(dades,camp_descripcio="descripcio1",taulavariables=conductor)
+
+
+
+```
+
+#  descrTable General
+```{r descrTable General, include=T}
 
 
 
@@ -224,26 +225,12 @@ dades<-etiquetar(dades,camp_descripcio="descripcio1",taulavariables=conductor)
 descrTable(TG.valor_CAT4~., dades,method = 2,Q1=0,Q3=1,extra.labels = c("","","")) %>% export2md()
 
 
-
-
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
 ```
 
 ## 4. Salvar taula plana
+```{r salvar}
+
+
 
 saveRDS(dades, file=here::here(params$dir_dades_desti,"dt_plana_exc.rds"))
 
