@@ -1,5 +1,5 @@
 ---
-title: 'Analisi transversal descriptiu HTG.Data de tall:   `r params$bd.dindex`'
+title: 'Analisicohorte Longitudinal Retospectiva HTG.Data de tall:   `r params$bd.dindex`'
 author: "Jordi Real & Rai Puig"
 website: "https://github.com/USR-DAPCAT/"
 
@@ -43,60 +43,27 @@ params:
 
 # FASE LECTURA
 
->> Generacio de taula plana i aplicacio dels primers criteris inclusio 
+>> Generacio de la taula plana  
 
-
-```{r setup, include = F}
+```{r setup, include = FALSE}
 #rm(list=ls())
+
 library(dplyr)
 library(lubridate)   
 
 # Funcions 
 link_source<-paste0("https://github.com/jrealgatius/Stat_codis/blob/master/funcions_propies.R","?raw=T")
 devtools::source_url(link_source)
-conductor_codis2<-here::here("Cataleg_HTG_BIG.xlsx")
+
+conductor_codis<-here::here("Cataleg_HTG_BIG.xlsx")
 directori_dades_origen<-params$dir_dades_origen
-cataleg_BOG<-readxl::read_excel(conductor_codis2,col_types = "text")
 
+cataleg<-readxl::read_excel(conductor_codis,col_types = "text")
 
 
 ```
 
-```{r}
 
-# install.packages("here",dependencies = "Depends")
-#&check; Dates d'inclusió (DINDEX): L'estudi I: La data d'inclusió serà la primera determinació de triglicèrids per cada any natural de cada tall transversal[2010,2013,2016,2019] <br/>
-#&check; En cas de més de una TG s'agafa la TG major per any <br/>
-#&check; Criteris d'inclusió: <br/>
-#&check; -Usuari del sistema de salut actiu inclosa a SIDIAP amb una data d'entrada al sistema mínima d'un any en data d'inclusió <br/>
-#&check; -Tenir com a mínim una determinació de triglicèrids <br/>
-#&check; Dm2 debut: min.date(dt_index1,dt_index2,dt_index3) <br/>
-#&check; Problemes de SALUT:[dtagr_diagnostics_HTG] finestra.dies=c(-Inf,0) <br/>
-#&check; Facturacio:[dtagr_facturat_HTG] [finestra.dies=c(-365,+30)] <br/>
-#&check; Prescripcio:[dtagr_prescrip_HTG] [finestra.dies=c(-30,+30)] <br/>
-#&check; dt_variables_HTG=dt_analitiques+dt_cliniques [finestra.dies = c(-365,+30)] <br/>
-#&check; dtagr_variables_HTG2=filter (cod=="TG")[finestra.dies = c(-365,0)]max.valor <br/>
-#&check; dt_tabaquisme [finestra.dies = c(-365,0)] <br/>
-#&check; fer una TAULA posant [0-150) [150-300) [300-500) [500-880) >=880 /Sexe/Edat/Blocs. br/>
-#&check; Revisio missings de pacients amb HDL  de pacients Greus i Molt Greus  HTG <br/>
-#&check; Fer les grafiques de Distribucio dels valors TG de manera adequada % <br/>
-#&check; Aplicar els canvis que hagin fet al Conductor. <br/>
-#&check; Dm-Gestacional= ha estar embarassada al moment de la DM. <br/>
-#&check; DIABETIS 3 Grups[DM1,DM2, DM-altres) <br/>
-#&check; Nomes farmacs prescrits (FP) <br/>
-#&check; A les Causes Secundaries, la DM  mal controlada, sera Glicada>8 <br/>
-#&check; A taula Descriptiva General (Taula00 del conductor), hi hem afegir els BLOCS (Bloc 0,Bloc1,Bloc2,Bloc3) <br/>
-#&check; Regions del mon WHO <br/>
-#&check; Variable a crear COLESTASIS 1-50:COLESTASIS=0//50-100:COLESTASIS=1//>100:COLESTASIS=2 <br/>
-#&check; HTG_COLESTASIS=1 IF COLESTATIS =1 or COLESTATIS =2; HTG_COLESTASIS=0 IF COLESTATIS =0 <br/>
-#&check; Crear la variable IMC <25/25-30/>=30 <br/>
-#&check; Bloc 1 o HTG secundaria primer esglao: : alcohol, IMC > 30 (>27.5 si ets asiatic), diabetis amb HbA1c > 8% (HbA1c >8)  <br/>
-#&check; Bloc 2 o HTG secundaria segon  esglao: : Bloc1+hepatopatia+nefropatia (Chronic Renal Insufficiency GFR <60 or CAC> 300,o	FG<60,o	CAC>300,o	Hepatic steatosis,o	Hemochromatosis,o	#HTG_COLESTASIS) <br/>
-#&check; Bloc 3 o HTG secundaria tercer  esglao: : Bloc1+Bloc2+Mental diseases+o	Drugs that cause HTG[FP]+Drugs #Acidretino[FP]+Antipsictics+Drugs[FP]+CICLOSPOR[FP]+EsteriodesDrugs[FP]+ESTROGEN[FP]+Sistemicas(DG.TRAST_SIST)+HIV+Thyrotropin>10+Cancer <br/> 
-#&check; Bloc 0 o HTG primaries:Tots els que no estiguin als BLOC1,BLOC2,BLOC3 <br/>
-#&check; Descriptiva General i per Blocs <br/>
-
-```
 
 
 ```{r include = F}
@@ -122,17 +89,9 @@ KK
 }
 
 ```
-## 0. Cataleg 
-```{r lectura_cataleg, include=T, eval=FALSE}
-# 0 Cataleg -----------
 
 
-cataleg_BOG<-readxl::read_excel(conductor_codis2,col_types = "text")
-
-
-```
-
-## 1. Lectura previa Data Index
+## 1. Lectura previa DataIndex
 
 Fechas de inclusión (DINDEX): 
 Primera Determinació de TG , i què el dtindex>='20080101' & dtindex<='20181231'
@@ -142,8 +101,11 @@ Criteris d'inclusió
 ●	xxxxx
 
 ```{r lectura1, include=T}
+# 1 Lectura -----------
 
-#ix[uni]
+
+
+#[uni]
 dt_poblacio<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_poblacio_20210701_235119.rds")) %>% as_tibble()
 #variable.names(dt_poblacio)
 #[1] "idp"      "sexe"     "situacio" "dnaix"    "entrada"  "sortida"  "agr_pais"
@@ -151,7 +113,7 @@ dt_temp<-dt_poblacio
 
 
 
-#xii[pluri]
+#[pluri]
 dt_analitiques<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_variables_analitiques_20210701_235119.rds")) %>% as_tibble()
 #variable.names(dt_analitiques)
 #[1] "idp"   "cod"   "agr"   "dat"   "val"   "rimap"
@@ -159,16 +121,12 @@ dt_analitiques<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_v
 
 ```
 
-## 2. Generacio de la Data Index
-
+## 2. Generar DataIndex
 
 Fechas de inclusión (DINDEX): 
 Primera Determinació de TG , i què el dtindex>='20080101' & dtindex<='20181231'  
 
-
-
-
-```{r genero_dt_index}
+```{r DataIndex, include=T}
 
 # Primera Determinació de TG , i què el dtindex>='20080101' & dtindex<='20181231'
 
@@ -186,7 +144,7 @@ dt_index<-
 
 ```
 
-## 1. Lectura posterior Data Index
+## 3. Lectura posterior DataIndex
 
 Fechas de inclusión (DINDEX): 
 Primera Determinació de TG , i què el dtindex>='20080101' & dtindex<='20181231'
@@ -199,13 +157,13 @@ Criteris d'inclusió
 
 
 
-#xiii[pluri]
+#[pluri]
 dt_cliniques<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_variables_cliniques_20210701_235119.rds")) %>% as_tibble() %>% 
   semi_join(dt_index,by="idp")
 #variable.names(dt_cliniques)
 #[1] "idp" "cod" "agr" "dat" "val"
 
-#[xii,xiii]
+
 ###########################################################################################  
 dt_variables<-dt_analitiques%>% bind_rows(dt_cliniques) %>% select(-rimap,-agr) %>% filter(!is.na(cod)) %>% 
   semi_join(dt_index,by="idp")
@@ -213,14 +171,14 @@ dt_variables<-dt_analitiques%>% bind_rows(dt_cliniques) %>% select(-rimap,-agr) 
 
 
 
-#i[uni]
+#[uni]
 dt_cartilla_sanitaria<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_cartilla_sanitaria_20210701_235119.rds")) %>% as_tibble()  %>% 
   semi_join(dt_index,by="idp")
 #variable.names(dt_cartilla_sanitaria)
 #[1] "idp"       "tcartilla"
 
 
-#ii[pluri]
+#[pluri]
 dt_cmbdh_diagnostics<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_cmbdh_diagnostics_20210701_235119.rds")) %>% as_tibble()  %>% 
   semi_join(dt_index,by="idp")
 #variable.names(dt_cmbdh_diagnostics)
@@ -235,50 +193,45 @@ dt_entregable_cmbdh_procediments<-readRDS(here::here(directori_dades_origen,"HTC
 #[14] "uci"         "duci"        "diesuci"  
 
 
-#iv [???uni] NO!!
+#[???uni] NO!!
 dt_complexitat_gma<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_complexitat_gma_20210701_235119.rds")) %>% as_tibble()  %>% 
   semi_join(dt_index,by="idp")
 #variable.names(dt_complexitat_gma)
 #[1] "idp"      "cod"      "agr"      "dat"      "val"      "num_cron"
 
 
-#v[pluri]
+#[pluri]
 dt_diagnostics<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_diagnostics_20210701_235119.rds")) %>% as_tibble()  %>% 
   semi_join(dt_index,by="idp")
 #variable.names(dt_diagnostics)
 #[1] "idp"    "cod"    "agr"    "dat"    "dbaixa"
 
-#vi[pluri]
+#[pluri]
 dt_farmacs_facturats<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_farmacs_facturats_20210701_235119.rds")) %>% as_tibble()  %>% 
   semi_join(dt_index,by="idp")
 #variable.names(dt_farmacs_facturats)
 #[1] "idp" "cod" "agr" "dat" "env"
 
-#vii[pluri]
+#[pluri]
 dt_farmacs_prescrits<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_farmacs_prescrits_20210701_235119.rds")) %>% as_tibble()  %>% 
   semi_join(dt_index,by="idp")
 #variable.names(dt_farmacs_prescrits)
 #[1] "idp"       "cod"       "agr"       "dat"       "dbaixa"    "posologia" "freq"   
 
-#viii[???pluri] NO!!
+#[???pluri] NO!!
 dt_fitxa_diabetic<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_fitxa_diabetic_20210701_235119.rds")) %>% as_tibble()  %>% 
   semi_join(dt_index,by="idp")
 #variable.names(dt_fitxa_diabetic)
 #[1] "idp"        "dat"        "cod"        "agr"        "dbaixa"     "punx_dia"   "punx_dia_b" "agulles"    "cs_r"       "dies_cs_r"  "cs"         "dies_cs"    "co_r"       "dies_co_r" 
 #[15] "co"         "dies_co"  
 
-
-
-
-
-
-#x[pluri]
+#[pluri]
 dt_tabaquisme<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_tabaquisme_20210701_235119.rds")) %>% as_tibble() %>% transmute(idp,cod="tabac",dat,val) %>% 
   semi_join(dt_index,by="idp")
 #variable.names(dt_tabaquisme)
 #[1] "idp"    "dat"    "dbaixa" "val"  
 
-#xi[???pluri] NO!!
+#[???pluri] NO!!
 dt_tires_reactives<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_tires_reactives_20210701_235119.rds")) %>% as_tibble()  %>% 
   semi_join(dt_index,by="idp")
 #variable.names(dt_tires_reactives)
@@ -287,14 +240,14 @@ dt_tires_reactives<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregab
 
 
 
-#xiv[uni]
+#[uni]
 dt_geosanitaries<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_variables_geosanitaries_20210701_235119.rds")) %>% as_tibble() %>% 
   semi_join(dt_index,by="idp")
 #variable.names(dt_geosanitaries)
 #[1] "idp"     "ambit"   "sidiaph"
 
 
-#xv[uni]
+#[uni]
 dt_socioeconomiques<-readRDS(here::here(directori_dades_origen,"HTCPANCR_entregable_variables_socioeconomiques_20210701_235119.rds")) %>% as_tibble()  %>% 
   semi_join(dt_index,by="idp")
 #variable.names(dt_socioeconomiques)
@@ -315,19 +268,11 @@ dt_diagnostics_AP_HOSP<-dt_diagnostics%>%transmute(idp,cod=as.character(cod),dat
 ###########################################################################################  
 
 
-
-
-
-
- dtagr_embaras_HTG<-dt_diagnostics_AP_HOSP%>%filter(agr=="EMBARAZO")%>%arrange(idp)%>%
+dtagr_embaras_HTG<-dt_diagnostics_AP_HOSP%>%filter(agr=="EMBARAZO")%>%arrange(idp)%>%
   group_by(idp)%>%summarise(data_emb=min(dat)) %>% ungroup()%>% 
   semi_join(dt_index,by="idp")
 
-
-
-
 dtagr_geosanitaries_HTG<-dt_geosanitaries
-
 dtagr_socioeconomiques_HTG<-dt_socioeconomiques
 
 
@@ -338,17 +283,18 @@ dt_variables2<-dt_variables %>% filter(cod=="TG")
 ```
 
 
+## 4. Generacio GranFuncio+Fusio+Taula Plana
+```{r GranFuncio,include=T}
 
-```{r la gran funcio}
+#dt_plana<-readRDS(here::here(params$dir_dades_desti,"dt_plana.rds"))
 
-dt_plana<-readRDS(here::here(params$dir_dades_desti,"dt_plana.rds"))
-
-dt_parametres<-read_excel(here::here(conductor_codis2),sheet = "parametres")
+dt_parametres<-read_excel(here::here(conductor_codis),sheet = "parametres")
 
 #dt_parametres
 
 
-dt_temp<-Generar_taula_plana(dt_index,cataleg = conductor_codis2,parametres = dt_parametres)%>%
+
+dt_temp<-Generar_taula_plana(dt_index,cataleg = conductor_codis,parametres = dt_parametres)%>%
   select(-dtindex)
 
 dt_plana<-dt_index%>%
@@ -365,10 +311,9 @@ dt_plana<-dt_index%>%
 
 
 ```
-## 5. Salvar part1 
-```{r SALVAR}
+## 5. Salvar Taula Plana
+```{r salvar}
 saveRDS(dt_plana, file=here::here(params$dir_dades_desti,"dt_plana.rds"))
-
 
 ```
 

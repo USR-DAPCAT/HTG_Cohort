@@ -1,5 +1,5 @@
 ---
-title: 'Analisi transversal descriptiu HTG.Data de tall:   `r params$bd.dindex`'
+title: 'Analisicohorte Longitudinal Retospectiva HTG.Data de tall:   `r params$bd.dindex`'
 author: "Jordi Real & Rai Puig"
 website: "https://github.com/USR-DAPCAT/"
 
@@ -38,38 +38,42 @@ params:
 
 
 
-# FASE LECTURA
-
->> Generacioo de taula plana
+## Fase Preparacio
 
 ```{r setup, include = FALSE}
 
+gc()
+# libreries i funcions:
+
 library(dplyr)
 library(lubridate)
-# Funcions 
+
+# Descarregar funcions github -
 link_source<-paste0("https://github.com/jrealgatius/Stat_codis/blob/master/funcions_propies.R","?raw=T")
 devtools::source_url(link_source)
 
-
-#[17.8.2021]
-conductor<-here::here("conductor_HTG.xlsx")
-conductor_codis<-here::here("Cataleg_HTG.xlsx")
-conductor_codis2<-here::here("Cataleg_HTG_BIG.xlsx")
+# Llegir plana
+dt_plana<-readRDS(here::here(params$dir_dades_desti,"dt_plana.rds"))%>% as_tibble()
 
 
 
 ```
-## 1. Lectura 
-```{r lectura, include=T}
-# 1 Lectura -----------
-dt_plana<-readRDS(here::here(params$dir_dades_desti,"dt_plana.rds"))
-# per fer el conductor!:
-#
-# write.csv2(names(dt_plana), file="KK.csv")
+## Recodificaciones   Na 
+
+```{r recodificacions Na }
+
+# Convertim les variables categòriques  Na o 0 --> 0, la resta 1  !!!!! ( no hi haurà missings!!)
+
+dt_plana<-mutate_at(dt_plana, vars( starts_with("DG.") ), funs( if_else(.==0  |  is.na(.)  ,0,1)))
+dt_plana<-mutate_at(dt_plana, vars( starts_with("EVENT.") ), funs( if_else(.==0  |  is.na(.)  ,0,1)))
+dt_plana<-mutate_at(dt_plana, vars( starts_with("FF.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+dt_plana<-mutate_at(dt_plana, vars( starts_with("FP.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+
 
 ```
 
-## Recodificacions i calculs
+
+## Recodificacions i calculs 1
 
 ```{r recodificacions1,include=F}
 
@@ -138,6 +142,10 @@ dt_plana<-dt_plana%>% mutate(TSH.valor_CAT=case_when(TSH.valor<=10~"1.TSH=<10",
 dt_plana<-dt_plana%>%mutate(Emb2=as.numeric(lubridate::ymd(dtindex)-lubridate::ymd(data_emb)))
 dt_plana<-dt_plana%>%mutate(Emb2=Emb2/365.25)
 dt_plana$Emb2=round(dt_plana$Emb2,3)
+
+
+
+
 
 #v)
 dt_plana<-dt_plana%>%mutate(Emb3=ifelse(Emb2>0 & Emb2<10 ,1,0))
@@ -341,29 +349,38 @@ dt_plana<-dt_plana%>%mutate(GGT.valor_CAT=case_when((GGT.valor     >=1 & GGT.val
 
 dt_plana<-dt_plana%>%mutate(HTG_COLESTASIS=case_when(GGT.valor_CAT==0 ~ 0,(GGT.valor_CAT==1  | GGT.valor_CAT==2)~ 1))
 
-   
 
+```
+
+## Recodificacions de zeros i uns nous+dates
+
+```{r recodificacions2}
 
 #xxx) convertim les dates i els Na , en una variable DICOTOMICA (0,1)!
-#---------------------------------------------------------------------------------------------------------------#
+
+
+
 dt_plana<-mutate_at(dt_plana, vars( starts_with("DG.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
 dt_plana<-mutate_at(dt_plana, vars( starts_with("EVENT.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
 dt_plana<-mutate_at(dt_plana, vars( starts_with("FF.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
 dt_plana<-mutate_at(dt_plana, vars( starts_with("FP.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
 dt_plana<-mutate_at(dt_plana, vars( starts_with("Emb3") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
 
-
-
-
 # HO HEM DE TORNAR A CANVIAR,DIMARTS 7.Desembre!:
 # tinc els dubte si he d'aplicar al is.na(.) a les variable HbA1c_7/HbA1c_8/THS.10/HTG_COLESTASIS, assumint a NA, com NO!
-
 
 dt_plana<-mutate_at(dt_plana, vars( starts_with("HbA1c_7") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
 dt_plana<-mutate_at(dt_plana, vars( starts_with("HbA1c_8") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
 dt_plana<-mutate_at(dt_plana, vars( starts_with("TSH.10") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
 dt_plana<-mutate_at(dt_plana, vars( starts_with("HTG_COLESTASIS") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
 
+
+```
+
+## Recodificacions i calculs 3
+
+
+```{r recodificacions3}
 
 
 #DG.DM2==1 | DG.DM1==1 | DG.DM_ALTRES==1 | (DG.DM_GEST==1 & Emb3==1) | DG.DM_IND==1 ) 
@@ -379,61 +396,6 @@ dt_plana<-dt_plana%>%mutate(DM_CAT=case_when( (DG.DM1==1  ~ 0),
 #xxxib)
 dt_plana<-dt_plana%>%mutate(DG.DM_GEST2=ifelse((DG.DM_GEST==1 & Emb3==1)  ,1,0)) 
 
-
-#dt_temp<-dt_plana%>%select(idp,DM_CAT,DG.DM1,DG.DM2,DG.DM_ALTRES,DG.DM_IND,DG.DM_GEST,Emb3)
-
-
-
-
-#TAULA_PLANA<-TAULA_PLANA %>% mutate(
-#     GRUP_DIABETIC_CAT2 = case_when(
-#          DG.DM1==1 ~ 1,
-#          (DG.DM2==1 | FF.ADO=1| FP.ADO=1) ~ 2,
-#          G_DIABETIC==1 ~ 3,
-#          TRUE ~ 0
-#     )
-#)
-
-
-
-
-#i
-#table(dt_plana$ALCOHOL_CS)
-#table(dt_plana$HbA1c_8)
-#ii)
-#table(dt_plana$IMC.valor_cat3)
-#iii)
-#table(dt_plana$DG.IRC2)
-#iv)
-#table(dt_plana$Emb3)
-#v)
-#table(dt_plana$TSH.10)
-#vi)
-#table(dt_plana$DG.VIH)
-#vii)
-#table(dt_plana$DG.LUPUS)
-#viii)
-#table(dt_plana$DG.HEMOCROMAT)
-#ix)
-#table(dt_plana$FP.ANTIPSICO)
-#table(dt_plana$FF.ANTIPSICO)
-#x)
-#table(dt_plana$FP.CORTIS_SIST)
-#table(dt_plana$FF.CORTIS_SIST)
-
-
-
-#
-#DM_ CAT_si	1	[E11 y/o ADO y/o HbA1c>7]
-#
-#0
-#dt_plana$DG.DM2
-#dt_plana$FF.ADO
-#dt_plana$FP.ADO
-#dt_plana$HbA1c_7
-
-#xxix)
-#dt_plana<-dt_plana%>%mutate(DM_CAT=ifelse(DG.DM2==1 | FF.ADO==1 | FP.ADO==1 | HbA1c_7==1 ,1,0)) 
 
 #xxxii) DM-gestacional,ha d'estar embarassada al moment de DM. corregit 17.11.2021!!
 dt_plana<-dt_plana%>%mutate(DM_CAT_HAB1C8=ifelse(((DG.DM2==1 | DG.DM1==1 | DG.DM_ALTRES==1 | (DG.DM_GEST==1 & Emb3==1) | DG.DM_IND==1 )  & HbA1c_8==1) | HbA1c_8==1 ,1,0)) 
@@ -452,16 +414,6 @@ dt_plana<-dt_plana%>%mutate(CONSUM_ALCOHOL=case_when(  UBE_DIA  ==0  |  is.na(UB
                            )) 
                                 
 
-#table(dt_plana$DG.DM_GEST,dt_plana$Emb3)
-#table(dt_plana$DG.DM_GEST)
-#table(dt_plana$Emb3)
-
-                    
-#dt_temp<-dt_plana%>%select(idp,CONSUM_ALCOHOL,UBE_DIA,age,sexe,Emb3)
-
-
-# HO HEM DE TORNAR A CANVIAR,DIMARTS 7.Desembre!:
-# tinc els dubte si he d'aplicar al is.na(.) a les variable HbA1c_7/HbA1c_8/THS.10/HTG_COLESTASIS, assumint a NA, com NO!
 
 #xxxiv)  ????? DEMÀ JORDI REAL!
 #28.10.2021:
@@ -790,15 +742,16 @@ dt_plana<-dt_plana%>%mutate(DM_CAT2=case_when( DG.DM1==1  ~ "DM1",
 
 
 
+```
 
 
 
                                 
 
 
-```
 
-```{r recodificacions2,include=F}
+
+```{r recodificacions temporals,include=F}
 #II)Problemes de Salut.
 
 
@@ -1019,7 +972,8 @@ dt_plana<-dt_plana%>%mutate(DM_CAT2=case_when( DG.DM1==1  ~ "DM1",
 #(PAS<120 & PAS>90) | (PAD<80 & PAD>60) --> 2
 #
 #  dt_plana<-dt_plana%>%mutate(PAS_PAD1b=case_when(     (PAS.valor<90  & PAD.valor<60)~                                      "1.[PAS<90 i PAD<60]",      
-#                                                       (PAS.valor>=140 | PAD.valor>=90)~                                    "4.[PAS>=140 O PAD>=90]",                    #                                     (PAS.valor>=120 & PAS.valor<140) | (PAD.valor>=80 & PAD.valor<90) ~  "3.[PAS:[120-140) o PAD:[80-90)]",
+#                                                       (PAS.valor>=140 | PAD.valor>=90)~                                    "4.[PAS>=140 O PAD>=90]",                    
+#                                     (PAS.valor>=120 & PAS.valor<140) | (PAD.valor>=80 & PAD.valor<90) ~  "3.[PAS:[120-140) o PAD:[80-90)]",
 #                                                      (PAS.valor>=90 & PAS.valor<120)  | (PAD.valor>=60 & PAD.valor<80) ~  "2.[PAS:[90-120) o PAD:[60-80)]" )) 
 #                                                     
 # 
