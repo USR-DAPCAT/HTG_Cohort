@@ -56,9 +56,13 @@ link_source<-paste0("https://github.com/jrealgatius/Stat_codis/blob/master/funci
 devtools::source_url(link_source)
 
 conductor_codis<-here::here("Cataleg_HTG_BIG.xlsx")
+conductor_codis2<-here::here("Cataleg_COVID.xlsx")
+
+
 directori_dades_origen<-params$dir_dades_origen
 
 cataleg<-readxl::read_excel(conductor_codis,col_types = "text")
+
 
 
 ```
@@ -68,25 +72,51 @@ cataleg<-readxl::read_excel(conductor_codis,col_types = "text")
 
 ```{r include = F}
 
-compar_catal<-function(dt1=dt_cataleg,dt2=dt_cataleg2){
+compar_catal<-function(dt1=cataleg_estandard,dt2=cataleg_nou){
 
-    #dt1=dt_cataleg  #dt1(Catàleg_nou); 
-    #dt2=dt_cataleg2 #dt2(catàleg_gran!) 
+    #dt1=cataleg  #dt1(Catàleg_nou);  #catalaeg actual
+    #dt2=cataleg2 #dt2(catàleg_gran!) #cataleg dels PROJECTE!
 
     K1<-dt1%>%select(cod)%>%group_by(cod)%>%dplyr::slice(1)%>%ungroup()
+    K2<-dt2%>%select(cod)%>%group_by(cod)%>%dplyr::slice(1)%>%ungroup() 
+    
+    #length(K1$cod)
+    #length(K2$cod)
+    
+    codis_falten<-K2%>%
+      anti_join(K1,by="cod")
+    
+    codis_falten
+    
+    
+    }
 
-    #K1<-K1%>% mutate(cod=ifelse(cod=="E78.0","aiaiai",cod)) 
 
-    K2<-dt2%>%select(cod=Codi)%>%group_by(cod)%>%dplyr::slice(1)%>%ungroup()%>%mutate(sel=1) 
+#[ el nou Projecte]# ::
 
-    KK<-K1%>%left_join(K2,by="cod")
-    KK<-KK%>%mutate(sel=ifelse(is.na(sel),"ERROR",sel)) 
-    KK<-KK%>%filter(sel=="ERROR")
+cataleg2<-readxl::read_excel(conductor_codis2,col_types = "text")%>% 
+  select(cod,Descripcio)%>%
+    group_by(cod)%>%dplyr::slice(1)%>%ungroup()
 
 
-KK
 
-}
+#només es fara per aquest DOMINI!:
+
+#diagnostics
+#cmbdh_diagnostics
+#cmbdh_procediments
+#farmacs_facturats
+#farmacs_prescrits
+#
+#
+#
+Codis_Bogdan<-compar_catal(dt1=cataleg,dt2=cataleg2)%>%
+  left_join(cataleg2,by="cod")
+#
+#
+#
+#
+#
 
 ```
 
