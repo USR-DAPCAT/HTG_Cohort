@@ -73,39 +73,42 @@ dt_plana<-mutate_at(dt_plana, vars( starts_with("FP.") ), funs( if_else(.==0  | 
 ```
 
 
-## Recodificacions i calculs 1
+## Recodificacions i calculs [Part demografica: dt_poblacio,dt_tabaquisme+TG.valor+Embaras]
 
 ```{r recodificacions1,include=F}
 
+#general
 #recodificacions: HTG
 
+#1)TG_VAR
 dt_plana<-dt_plana%>%mutate(TG_VAR=ifelse(is.na(TG.valor) ,"No","Si"))
+
+#######################################################################################################################################
 #dt_plana<-dt_plana%>%mutate(TG_VAR2=ifelse(is.na(TG.valor) ,0,1))
-
-
-table(dt_plana$TG_VAR)
-
+#
+#
+#table(dt_plana$TG_VAR)
+#
 #5. Perdón por el error, creo que lo he aclarado mejor en el otro correo. 
 #Mantenemos niveles de HTG grave (>500) y muy grave (>880) tal como pone en el protocolo. 
 #Lo que quería era desglosar el ítem "normal" (<500) en los tres niveles: normal < 150, leve, 150-300, moderada 300-500.
-
-
+#
+#
 # No por valores normales y leves, no se que ha pasado con la categorización anterior pero principalmente hay 
 # 2 grupos TG > 500 mg/dl  y  TG>880 mg/dl.
-
+#
 #A efectos de este estudio consideraremos como HTG moderada-grave a las personas que presenten concentraciones de TG > 500 mg/dl 
 #y muy grave las superiores a 880 mg/dl.
+#######################################################################################################################################
 
-
-#i)
-
+#2)TG.valor_CAT
 dt_plana<-dt_plana%>% mutate(TG.valor_CAT=case_when(
  TG.valor<500~"1.[0-500).Normal/Moderat"  ,
  TG.valor>=500 & TG.valor<880~"2.[500-880).Greu",  
  TG.valor>=880 ~"3.>=880).Molt Greu"))
 
-#ii)
 
+#3)TG.valor_CAT2
 dt_plana<-dt_plana%>% mutate(TG.valor_CAT2=case_when(
  TG.valor<150~"1.[0-150)"  ,
  TG.valor>=150 & TG.valor<300~"2.[150-300)",  
@@ -114,278 +117,246 @@ dt_plana<-dt_plana%>% mutate(TG.valor_CAT2=case_when(
  TG.valor>=880~"5.>=880"))
 
 
-#iib) 07.02.2022!!!
-
+#4)TG.valor_CAT3
 dt_plana<-dt_plana%>% mutate(TG.valor_CAT3=case_when(
  TG.valor<500~"1.Tg<500.No Greu"  ,
  TG.valor>=500~"2.Tg>=500 Greu" ))
 
+#5)TG.valor_CAT3b
 dt_plana<-dt_plana%>% mutate(TG.valor_CAT3b=case_when(
  TG.valor<500~0  ,
  TG.valor>=500~1))
 
-
+#6)TG.valor_CAT4
 dt_plana<-dt_plana%>% mutate(TG.valor_CAT4=case_when(
  TG.valor<150~"1.<150"  ,
  TG.valor>=150 & TG.valor<300~"2.[150-300)",  
  TG.valor>=300 & TG.valor<500~"3.[300-500)",
  TG.valor>=500 ~"3.>=500)"))
 
-#iii)
 
-dt_plana<-dt_plana%>% mutate(TSH.valor_CAT=case_when(TSH.valor<=10~"1.TSH=<10",
-                                                     TSH.valor> 10~"2.TSH>10"))
-
-#
-
-#iv)
+#7)Emb2
 dt_plana<-dt_plana%>%mutate(Emb2=as.numeric(lubridate::ymd(dtindex)-lubridate::ymd(data_emb)))
 dt_plana<-dt_plana%>%mutate(Emb2=Emb2/365.25)
 dt_plana$Emb2=round(dt_plana$Emb2,3)
 
-
-
-
-
-#v)
+#8)Emb3
 dt_plana<-dt_plana%>%mutate(Emb3=ifelse(Emb2>0 & Emb2<10 ,1,0))
 
-#vi)
-dt_plana<-dt_plana%>%mutate(HbA1c_7=ifelse(HBA1C.valor>7,1,0))
 
-#vii)
-#03.09.2021
-dt_plana<-dt_plana%>%mutate(HbA1c_8=ifelse(HBA1C.valor>8,1,0))
-
-#viii)
-#17.10.2021
-dt_plana<-dt_plana%>%mutate(TSH.10=ifelse(TSH.valor>10,1,0))
-
-
-#ix)
-#28.10.2021
+#9)qmedea2
 dt_plana<-dt_plana%>% mutate(qmedea2=case_when(qmedea=="U1"~1,
                                                qmedea=="U2"~2,
                                                qmedea=="U3"~3,
                                                qmedea=="U4"~4,
                                                qmedea=="U5"~5))
-                                               
 
-
-#x)   
-############
-#07.03.2021#
-############
-
+#10)tabac2   
 dt_plana<-dt_plana%>% mutate(tabac2=case_when(tabac.valor==0~0,
                                               tabac.valor==1~1,
-                                                tabac.valor==2~0))
+                                              tabac.valor==2~0))
 
-
-
-#xi)
+#11)age
 dt_plana<-dt_plana %>% mutate(age=as.numeric(lubridate::ymd(dtindex)-lubridate::ymd(dnaix))/365.25)
-#
 
 
-
-#xii)**EDAT-->age2.cat: <30,[30-56),[56-75),>=75
-
+#12)EDAT-->age2.cat: <30,[30-56),[56-75),>=75.
 dt_plana<-dt_plana %>% mutate(age2.cat=case_when(age<30~ 1,
                                                    age>=30 & age<56 ~ 2,
                                                    age>=56 & age<75 ~ 3,
                                                    age >=75~ 4 ))
-#10.2.2021.
 
-#xiii)**EDAT-->age2.cat: <56),[56-75),>=75
-
+#13)EDAT-->age2.cat: <56),[56-75),>=75.
 dt_plana<-dt_plana %>% mutate(age3.cat=case_when(age<56 ~ 1,
                                                    age>=56 & age<75 ~ 2,
                                                    age >=75~ 3 ))
 
-
-#xiv)**EDAT-->age3.cat-><30,[30-40),[40-50),[50-60),[60-70),[70-80),>=80
-dt_plana<-dt_plana%>%mutate(age4.cat=case_when(     age<30~ 1,
-                                                      age>=30 & age<40 ~ 2,  
-                                                     age>=40 & age<50 ~ 3,
-                                                     age>=50 & age<60 ~ 4,
-                                                      age>=60 & age<70 ~ 5,
-                                                      age>=70 & age<80 ~ 6,
-                                                age>=80~ 7 ))
-
+#14)EDAT-->age3.cat-><30,[30-40),[40-50),[50-60),[60-70),[70-80),>=80.
+dt_plana<-dt_plana%>%mutate(age4.cat=case_when(age<30~ 1,
+                                               age>=30 & age<40 ~ 2,
+                                               age>=40 & age<50 ~ 3,
+                                               age>=50 & age<60 ~ 4,
+                                               age>=60 & age<70 ~ 5,
+                                               age>=70 & age<80 ~ 6,
+                                               age>=80~ 7 ))
 
 #[23.10.2021]
-#xv)**EDAT-->age3.cat-><30,[30-40),[40-50),[50-60),[60-70),[70-80),>=80
-dt_plana<-dt_plana%>%mutate(age5.cat=case_when(     age<18~ 1,
-                                                    age>=18 & age<36 ~ 2,  
-                                                    age>=36 & age<51 ~ 3,
-                                                    age>=51 & age<65 ~ 4,
-                                                    age>=65~ 5 ))
+#15)EDAT-->age3.cat-><30,[30-40),[40-50),[50-60),[60-70),[70-80),>=80
+dt_plana<-dt_plana%>%mutate(age5.cat=case_when(age<18~ 1,
+                                               age>=18 & age<36 ~ 2,  
+                                               age>=36 & age<51 ~ 3,
+                                               age>=51 & age<65 ~ 4,
+                                               age>=65~ 5 ))
 
-
-
-
-#xvi)
-dt_plana<-dt_plana%>% mutate_at(c("dnaix","entrada","sortida" ),ymd)
-
-
-
-
-#---------------------------------------------------------------------------------------------------------------#
-#xviii)**Index de Massa Corporal->IMC.valor_cat2: <18.5,[18.5-25),[25-30),>=30
-#---------------------------------------------------------------------------------------------------------------#
-dt_plana<-dt_plana%>%mutate(IMC.valor_cat2=case_when(   TT103.valor   <18.5~ 1,
-                                                        TT103.valor   >=18.5 & TT103.valor   <25 ~ 2,  
-                                                        TT103.valor   >=25 & TT103.valor   <30 ~ 3,
-                                                        TT103.valor   >=30  ~ 4))
+#16)Index de Massa Corporal->IMC.valor_cat2: <18.5,[18.5-25),[25-30),>=30
+dt_plana<-dt_plana%>%mutate(IMC.valor_cat2=case_when(TT103.valor   <18.5~ 1,
+                                                     TT103.valor   >=18.5 & TT103.valor   <25 ~ 2,  
+                                                     TT103.valor   >=25 & TT103.valor   <30 ~ 3,
+                                                     TT103.valor   >=30  ~ 4))
 #[23.10.2021]#
-#---------------------------------------------------------------------------------------------------------------#
-#xix)**Index de Massa Corporal->IMC.valor_cat3: <=30,>30
-#---------------------------------------------------------------------------------------------------------------#
-dt_plana<-dt_plana%>%mutate(IMC.valor_cat3=case_when( TT103.valor   <=30~ 1,TT103.valor   >30  ~ 2))
+#17)Index de Massa Corporal->IMC.valor_cat3: <=30,>30
+dt_plana<-dt_plana%>%mutate(IMC.valor_cat3=case_when(TT103.valor   <=30~ 1,
+                                                     TT103.valor   >30  ~ 2))
+
+#18)
+dt_plana<-dt_plana%>%mutate(IMC.valor_cat5=case_when(TT103.valor   <25~ 1,
+                                                     TT103.valor   >=25 & TT103.valor   <30 ~ 2,  
+                                                     TT103.valor   >=30  ~ 3))
+
+
+#19)
+dt_plana<-dt_plana%>%mutate(agr_pais2=case_when( agr_pais=="Àfrica central"           ~ 1,
+                                                 agr_pais=="Àfrica meridional"        ~ 1,
+                                                 agr_pais=="Àfrica occidental"        ~ 1,
+                                                 agr_pais=="Àfrica oriental"          ~ 1,
+                                                 agr_pais=="Àfrica septentrional"     ~ 1,
+                                                 agr_pais=="Amèrica central"          ~ 2,
+                                                 agr_pais=="Amèrica del Nord"         ~ 2,
+                                                 agr_pais=="Amèrica del Sud"          ~ 2,
+                                                 agr_pais=="Carib"                    ~ 2,
+                                                 agr_pais=="Àsia central"             ~ 3,
+                                                 agr_pais=="Àsia meridional"          ~ 3,
+                                                 agr_pais=="Àsia occidental"          ~ 3,
+                                                 agr_pais=="Àsia oriental"            ~ 3,
+                                                 agr_pais=="Àsia sud-oriental"        ~ 3,
+                                                 agr_pais=="Espanya"                  ~ 4,
+                                                 agr_pais=="Europa meridional"        ~ 4,
+                                                 agr_pais=="Europa occidental"        ~ 4,
+                                                 agr_pais=="Europa oriental"          ~ 4,
+                                                 agr_pais=="Europa septentrional"     ~ 4,
+                                                 agr_pais=="Austràlia i Nova Zelanda" ~ 5,
+                                                 agr_pais=="Melanèsia"                ~ 5,
+                                                 agr_pais=="Micronèsia"               ~ 5,
+                                                 agr_pais=="Polinèsia"                ~ 5,
+                                                 
+                                                 
+                                                 
+                                                 
+                                                 
+                           
+                           )) 
+
+```
 
 
 
-dt_plana<-dt_plana%>%mutate(IMC.valor_cat5=case_when(   TT103.valor   <25~ 1,
-                                                        TT103.valor   >=25 & TT103.valor   <30 ~ 2,  
-                                                        TT103.valor   >=30  ~ 3))
-#
+## Recodificacions i calculs [Part Diagnostics: dt_diagnostics_AP_HOSP]
+
+```{r recodificacions2}
+###Problemes de Salut##
+
+```
+
+## Recodificacions i calculs [Part FARMACS: dt_facturacio,dt_prescripcio]
+
+```{r recodificacions3}
+
+## FARMACS:: Tractaments##
+
+```
+
+## Recodificacions i calculs [Part dt_variables: dt_analitiques,dt_cliniques]
+
+```{r recodificacions4}
+###V.Analitiques+V.Cliniques.##
+
+#1)
+dt_plana<-dt_plana%>%mutate(HbA1c_7=ifelse(HBA1C.valor>7,1,0))
+
+#2)
+dt_plana<-dt_plana%>%mutate(HbA1c_8=ifelse(HBA1C.valor>8,1,0))
 
 
-#xx)
-#[23.10.2021]#
-#---------------------------------------------------------------------------------------------------------------#
-dt_plana <- dt_plana %>%
-      mutate(IMC.valor_cat4 = case_when(TT103.valor   <=30  & (agr_pais!="Àsia central"  & 
-                                                               agr_pais!="Àsia meridional"  &
-                                                               agr_pais!="Àsia occidental"  &
-                                                               agr_pais!="Àsia oriental"  &
-                                                               agr_pais!="Àsia sud-oriental"  
-                                                               ) ~ 1 ,
-                                        
-                                        
-                                        
-                                        
-                                        TT103.valor   >30  & (agr_pais!="Àsia central"  & 
-                                                               agr_pais!="Àsia meridional"  &
-                                                               agr_pais!="Àsia occidental"  &
-                                                               agr_pais!="Àsia oriental"  &
-                                                               agr_pais!="Àsia sud-oriental" ) ~ 3
-                                        
-                                        
-                                        ,
-                                        
-                                        TT103.valor  <=27.5  & (agr_pais=="Àsia central"   | 
-                                                               agr_pais=="Àsia meridional"   |
-                                                               agr_pais=="Àsia occidental"   |
-                                                               agr_pais=="Àsia oriental"   |
-                                                               agr_pais=="Àsia sud-oriental"  ) ~ 2
+#3)TG.valor_CAT41
+dt_plana<-dt_plana%>% mutate(TSH.valor_CAT=case_when(TSH.valor<=10~"1.TSH=<10",
+                                                     TSH.valor> 10~"2.TSH>10"))
 
+#4)
+dt_plana<-dt_plana%>%mutate(TSH.10=ifelse(TSH.valor>10,1,0))
 
-
-
-                                        
-                                        ,
-                                                        
-                                        TT103.valor   >27.5  & (agr_pais=="Àsia central"  | 
-                                                               agr_pais=="Àsia meridional"   |
-                                                               agr_pais=="Àsia occidental"   |
-                                                               agr_pais=="Àsia oriental"   |
-                                                               agr_pais=="Àsia sud-oriental"   ) ~ 4                          
-                                        ))
-                                        
-
-  
-  
-#xxi)  
+#5)  
 dt_plana<-dt_plana%>%mutate(COL_NO_HDL.valor=COLTOT.valor-COLHDL.valor)
 
-#xxii)
+#6)
 dt_plana<-dt_plana%>%mutate(COL_REM.valor=COLTOT.valor-(COLHDL.valor+COLLDL.valor))
 
 
-
-#xxiii)
-#3. ¿En la tabla plana se podrán categorizar los niveles de insuficiencia renal: <15, 15-30, 30-45, 45-60, >60?
-#10.2.2021.
+#7)¿En la tabla plana se podrán categorizar los niveles de insuficiencia renal: <15, 15-30, 30-45, 45-60, >60?
 dt_plana<-dt_plana%>%mutate(CKDEPI.valor_CAT2=case_when(CKDEPI.valor     <15~ 1,
                                                           CKDEPI.valor     >=15 & CKDEPI.valor     <30 ~ 2,  
                                                           CKDEPI.valor     >=30 & CKDEPI.valor     <45 ~ 3,
                                                           CKDEPI.valor     >=45 & CKDEPI.valor     <60 ~ 4,
                                                           CKDEPI.valor     >=60 & CKDEPI.valor     <90 ~ 5,
                                                           CKDEPI.valor     >=90  ~ 6))
-#xxiv)
-#################################
-# eps rectificat!: #[12.07.2021]#
-#################################
-#--------------------------------------------------------------------------------------------------------------#
-#iii) insuficiencia renal cronica : Insuficiencia Renal Cronica: #[diagnostico +segun valores de FG, FG<60]
-#--------------------------------------------------------------------------------------------------------------#
-# corregit els dia 1.xi.2020!!!
-#
+
+
+#8)insuficiencia renal cronica : Insuficiencia Renal Cronica: #[diagnostico +segun valores de FG, FG<60]
 dt_plana<-dt_plana%>%mutate(DG.IRC2=ifelse((CKDEPI.valor<60 | CAC.valor>300)  ,1,0)) 
-#
-#
-#xxv)
+
+#9)
 dt_plana<-dt_plana%>%mutate(DG.FG60=ifelse(CKDEPI.valor<60   ,1,0)) 
 
-#xxvi)
+#10)
 dt_plana<-dt_plana%>%mutate(DG.CAC300=ifelse(CAC.valor>300   ,1,0)) 
 
-#xxvii)                           
+#11)                           
 dt_plana<-dt_plana%>%mutate(DG.IRC2=ifelse((CKDEPI.valor<60 | CAC.valor>300)  ,1,0)) 
 
 
-# fet el dia 16.11.2021! 
-
-#xxviii) 
-    
+#12)    
 dt_plana<-dt_plana%>%mutate(GGT.valor_CAT=case_when((GGT.valor     >=1 & GGT.valor     <50 ~ 0),
                                                      (GGT.valor     >=50 & GGT.valor     <100 ~ 1),
                                                       GGT.valor     >=100 ~ 2 ))
-                                                     
-#xxix)   
 
-
+#13)
 dt_plana<-dt_plana%>%mutate(HTG_COLESTASIS=case_when(GGT.valor_CAT==0 ~ 0,(GGT.valor_CAT==1  | GGT.valor_CAT==2)~ 1))
 
 
 ```
+## Recodificacions i calculs [combinacions:Part demografica+Part Diagnostics+Part FARMACS+Part dt_variables]
 
-## Recodificacions de zeros i uns nous+dates
+```{r recodificacions5}
+## Combinacions ##
 
-```{r recodificacions2}
+#1)
+dt_plana <- dt_plana %>%
+      mutate(IMC.valor_cat4 = case_when(TT103.valor   <=30  & (agr_pais!="Àsia central"     & 
+                                                               agr_pais!="Àsia meridional"  &
+                                                               agr_pais!="Àsia occidental"  &
+                                                               agr_pais!="Àsia oriental"    &
+                                                               agr_pais!="Àsia sud-oriental"  
+                                                              ) ~ 1 ,
+                                        
+                                        TT103.valor   >30  & (agr_pais!="Àsia central"      & 
+                                                              agr_pais!="Àsia meridional"   &
+                                                              agr_pais!="Àsia occidental"   &
+                                                              agr_pais!="Àsia oriental"     &
+                                                              agr_pais!="Àsia sud-oriental" ) ~ 3
+                                                                                ,
+                                        
+                                        TT103.valor  <=27.5 & (agr_pais=="Àsia central"      | 
+                                                               agr_pais=="Àsia meridional"   |
+                                                               agr_pais=="Àsia occidental"   |
+                                                               agr_pais=="Àsia oriental"     |
+                                                               agr_pais=="Àsia sud-oriental"  ) ~ 2
 
-#xxx) convertim les dates i els Na , en una variable DICOTOMICA (0,1)!
+                                        ,
+                                                        
+                                        TT103.valor   >27.5  & (agr_pais=="Àsia central"     | 
+                                                                agr_pais=="Àsia meridional"  |
+                                                                agr_pais=="Àsia occidental"  |
+                                                                agr_pais=="Àsia oriental"    |
+                                                                agr_pais=="Àsia sud-oriental"   ) ~ 4                          
+                                        ))
+                                        
 
-
-
-dt_plana<-mutate_at(dt_plana, vars( starts_with("DG.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
-dt_plana<-mutate_at(dt_plana, vars( starts_with("EVENT.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
-dt_plana<-mutate_at(dt_plana, vars( starts_with("FF.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
-dt_plana<-mutate_at(dt_plana, vars( starts_with("FP.") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
-dt_plana<-mutate_at(dt_plana, vars( starts_with("Emb3") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
-
-# HO HEM DE TORNAR A CANVIAR,DIMARTS 7.Desembre!:
-# tinc els dubte si he d'aplicar al is.na(.) a les variable HbA1c_7/HbA1c_8/THS.10/HTG_COLESTASIS, assumint a NA, com NO!
-
-dt_plana<-mutate_at(dt_plana, vars( starts_with("HbA1c_7") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
-dt_plana<-mutate_at(dt_plana, vars( starts_with("HbA1c_8") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
-dt_plana<-mutate_at(dt_plana, vars( starts_with("TSH.10") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
-dt_plana<-mutate_at(dt_plana, vars( starts_with("HTG_COLESTASIS") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
-
-
-```
-
-## Recodificacions i calculs 3
-
-
-```{r recodificacions3}
+  
+  
 
 
 #DG.DM2==1 | DG.DM1==1 | DG.DM_ALTRES==1 | (DG.DM_GEST==1 & Emb3==1) | DG.DM_IND==1 ) 
 
-#xxxi)
+#2)
 dt_plana<-dt_plana%>%mutate(DM_CAT=case_when( (DG.DM1==1  ~ 0),
                                               
                                              ((DG.DM2==1 | FF.ADO==1 | FP.ADO==1) ~ 1),
@@ -393,15 +364,15 @@ dt_plana<-dt_plana%>%mutate(DM_CAT=case_when( (DG.DM1==1  ~ 0),
                                              ( (DG.DM_ALTRES==1) | (DG.DM_GEST==1 & Emb3==1) | (DG.DM_IND==1) ) ~ 2 ))
 
 
-#xxxib)
+#3)
 dt_plana<-dt_plana%>%mutate(DG.DM_GEST2=ifelse((DG.DM_GEST==1 & Emb3==1)  ,1,0)) 
 
 
-#xxxii) DM-gestacional,ha d'estar embarassada al moment de DM. corregit 17.11.2021!!
+#4) DM-gestacional,ha d'estar embarassada al moment de DM. corregit 17.11.2021!!
 dt_plana<-dt_plana%>%mutate(DM_CAT_HAB1C8=ifelse(((DG.DM2==1 | DG.DM1==1 | DG.DM_ALTRES==1 | (DG.DM_GEST==1 & Emb3==1) | DG.DM_IND==1 )  & HbA1c_8==1) | HbA1c_8==1 ,1,0)) 
 
 
-#xxxiii)
+#5)
 dt_plana<-dt_plana%>%mutate(UBE_DIA=ALSET.valor/7)
 dt_plana<-dt_plana%>%mutate(CONSUM_ALCOHOL=case_when(  UBE_DIA  ==0  |  is.na(UBE_DIA)  ~ 0,
                            UBE_DIA>0 & UBE_DIA  <4 & age>=18 & sexe=="H" ~ 1,
@@ -412,19 +383,17 @@ dt_plana<-dt_plana%>%mutate(CONSUM_ALCOHOL=case_when(  UBE_DIA  ==0  |  is.na(UB
                            UBE_DIA>0 & Emb3==1   ~ 2 ,
                            DG.PANC_AG_AL == 1 ~ 2
                            )) 
-                                
 
-
-#xxxiv)  ????? DEMÀ JORDI REAL!
-#28.10.2021:
+#6)  ????? DEMÀ JORDI REAL!
 dt_plana<-dt_plana%>%mutate(ALCOHOL_CS=ifelse(CONSUM_ALCOHOL==1 | CONSUM_ALCOHOL==2 | (ALSET.valor>13 & sexe=="D") | (ALSET.valor>21 & sexe=="H") ,1,0))
 dt_plana<-mutate_at(dt_plana, vars( starts_with("ALCOHOL_CS") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
 
 
-#IMC.valor_cat4
 
 
-#xxxv)
+
+#7)
+
 #1.	Bloque 1 o HTG secundaria primer escalón: 
 
 #i)     alcohol, ALCOHOL_CS=1
@@ -435,11 +404,14 @@ dt_plana<-mutate_at(dt_plana, vars( starts_with("ALCOHOL_CS") ), funs( if_else(.
 # HO HEM DE TORNAR A CANVIAR,DIMARTS 7.Desembre!:
 # tinc els dubte si he d'aplicar al is.na(.) a les variable HbA1c_7/HbA1c_8/THS.10/HTG_COLESTASIS, assumint a NA, com NO!
 #????? DEMÀ JORDI REAL!
+#
+#
 dt_plana<-dt_plana%>%mutate(BLOC1=ifelse((ALCOHOL_CS==1 | IMC.valor_cat4==3 | IMC.valor_cat4==4 |    DM_CAT_HAB1C8==1 )  ,1,0)) 
 dt_plana<-mutate_at(dt_plana, vars( starts_with("BLOC1") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
 
 
-#xxxvi)
+#8)
+
 #2.	    Bloque 2 o HTG secundarias segundo escalón: BLOQUE 1 + hepatopatía + nefropatía: 
 
 #i)	    Chronic Renal Insufficiency GFR <60 or CAC> 300
@@ -462,7 +434,8 @@ dt_plana<-dt_plana%>%mutate(BLOC2=ifelse(BLOC1==1          |
 dt_plana<-mutate_at(dt_plana, vars( starts_with("BLOC2") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
 
 
-#xxxvii)
+#9)
+
 #3.	Bloque 3 o HTG secundarias tercer escalón o suma de todas las secundarias BLOQUE 1 + BLOQUE 2 + resto: 
 
 # HO HEM DE TORNAR A CANVIAR,DIMARTS 7.Desembre!:
@@ -556,6 +529,8 @@ dt_plana<-mutate_at(dt_plana, vars( starts_with("BLOC3") ), funs( if_else(.==0  
 ##########################################################################
 
 
+
+#10)
 # HO HEM DE TORNAR A CANVIAR,DIMARTS 7.Desembre!:
 # tinc els dubte si he d'aplicar al is.na(.) a les variable HbA1c_7/HbA1c_8/THS.10/HTG_COLESTASIS, assumint a NA, com NO!
 dt_plana<-dt_plana%>%mutate(BLOC0=ifelse(BLOC1==0              &
@@ -593,162 +568,30 @@ dt_plana<-dt_plana%>%mutate(BLOC0=ifelse(BLOC1==0              &
 #                                         ,DG.CANCER,BLOC1,BLOC2,BLOC3)
 
 
-#xxxix)
-
-dt_plana<-dt_plana%>%mutate(agr_pais2=case_when( agr_pais=="Àfrica central"           ~ 1,
-                                                 agr_pais=="Àfrica meridional"        ~ 1,
-                                                 agr_pais=="Àfrica occidental"        ~ 1,
-                                                 agr_pais=="Àfrica oriental"          ~ 1,
-                                                 agr_pais=="Àfrica septentrional"     ~ 1,
-                                                 agr_pais=="Amèrica central"          ~ 2,
-                                                 agr_pais=="Amèrica del Nord"         ~ 2,
-                                                 agr_pais=="Amèrica del Sud"          ~ 2,
-                                                 agr_pais=="Carib"                    ~ 2,
-                                                 agr_pais=="Àsia central"             ~ 3,
-                                                 agr_pais=="Àsia meridional"          ~ 3,
-                                                 agr_pais=="Àsia occidental"          ~ 3,
-                                                 agr_pais=="Àsia oriental"            ~ 3,
-                                                 agr_pais=="Àsia sud-oriental"        ~ 3,
-                                                 agr_pais=="Espanya"                  ~ 4,
-                                                 agr_pais=="Europa meridional"        ~ 4,
-                                                 agr_pais=="Europa occidental"        ~ 4,
-                                                 agr_pais=="Europa oriental"          ~ 4,
-                                                 agr_pais=="Europa septentrional"     ~ 4,
-                                                 agr_pais=="Austràlia i Nova Zelanda" ~ 5,
-                                                 agr_pais=="Melanèsia"                ~ 5,
-                                                 agr_pais=="Micronèsia"               ~ 5,
-                                                 agr_pais=="Polinèsia"                ~ 5,
-                                                 
-                                                 
-                                                 
-                                                 
-                                                 
-                           
-                           )) 
                 
 
-#    agr_pais:
-
-#1.  Àfrica central       
-#2.  Àfrica meridional        
-#3.  Àfrica occidental 
-#4.  Àfrica oriental      
-#5.  Àfrica septentrional     
-#6.  Amèrica central             
-#7.  Amèrica del Nord
-#8.  Amèrica del Sud      
-#9.  Àsia central             
-#10. Àsia meridional             
-#11  Àsia occidental
-#12  Àsia oriental        
-#13  Àsia sud-oriental        
-#14  Austràlia i Nova Zelanda    
-#15  Carib 
-#16  Espanya              
-#17  Europa meridional        
-#18  Europa occidental          
-#19  Europa oriental 
-#20  Europa septentrional                
-#21  Melanèsia               
-#22  Micronèsia                
-#23  Polinèsia
 
 
 
-#xxxiii)
-#dt_plana<-dt_plana%>%mutate(Causes_Sec=ifelse(
-#                                        ALCOHOL_CS==1         | 
-#                                        DM_CAT_HAB1C8==1      |
-#                                        IMC.valor_cat3==2     |
-#                                        DG.IRC2==1            | 
-#                                        Emb3==1               | 
-#                                        TSH.10==1             | 
-#                                        DG.VIH==1             | 
-#                                        DG.TRAST_SIST==1      | 
-#                                        DG.HEMOCROMAT==1      | 
-#                                        FP.ANTIPSICO==1       | 
-#                                        FF.ANTIPSICO==1       | 
-#                                        FP.CORTIS_SIST==1     | 
-#                                        FF.CORTIS_SIST==1     |
-#                                        DG.CANCER==1          |
-#                                        HTG_COLESTASIS==1
-#                                        
-#                                        ,   1,0)) 
-
-
-#dt_plana<-mutate_at(dt_plana, vars( starts_with("Causes_Sec") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
-
-
-
-#xxxiv)
-#dt_plana<-dt_plana%>%mutate(BLOC1=ifelse(ALCOHOL_CS==1,1,0)) 
-
-#xxxv)                            
-#dt_plana<-dt_plana%>%mutate(BLOC2=ifelse(ALCOHOL_CS==1       | 
-#                                        DM_CAT_HAB1C8==1            |
-#                                        IMC.valor_cat3==2     |
-#                                        DG.IRC2==1             
-#                                                    
-#                                        ,1,0)) 
-
-
-
-
-
-
-#dt_temp<-dt_plana%>%select(idp,
-#                      Causes_Sec,
-#                      ALCOHOL_CS,
-#                      DM_CAT_HAB1C8,
-#                      IMC.valor_cat3,
-#                      DG.IRC2,
-#                      Emb3,
-#                      TSH.10,
-#                      DG.VIH,
-#                      DG.TRAST_SIST,
-#                      DG.HEMOCROMAT,
-#                      FP.ANTIPSICO,
-#                      FF.ANTIPSICO,
-#                      FP.CORTIS_SIST,
-#                      FF.CORTIS_SIST)
-
-
-#15.02.2022
-#dt_plana<-dt_plana%>%mutate(HbA1c_8=ifelse(HBA1C.valor>8,1,0))
-
-
-
-# mirar: Glucemia basal 110-125 mg/dl ?? preguntar J.Real!!! 16.2.2022!!
-
-#dt_plana<-dt_plana%>%mutate(DM_CAT2=case_when( ((DM_CAT==0 | DM_CAT==1 | DM_CAT==2) ~ "DM"),
-#                                               ((HBA1C.valor>=5.7  &  HBA1C.valor<=6.4)  ~ "Pre_DM" ), TRUE ~ "Normals" ))
-
-
-
-
-
-
-# mirar: Glucemia basal 110-125 mg/dl ?? preguntar J.Real!!! 16.2.2022!!
-
-
-
-dt_plana<-dt_plana%>%mutate(DM_CAT2=case_when( DG.DM1==1  ~ "DM1",
-                                              
+dt_plana<-dt_plana%>%mutate(DM_CAT2=case_when(DG.DM1==1  ~ "DM1",
                                              (DG.DM2==1 | FF.ADO==1 | FP.ADO==1) ~ "DM2",
-                                             
-                                             ( DG.DM_ALTRES==1 | DG.DM_GEST==1 & Emb3==1 | DG.DM_IND==1 ) ~ "DM_ALTRES" ,
-                                             (HBA1C.valor>=5.7  &  HBA1C.valor<=6.4)  ~ "Pre_DM" , 
-                                              TRUE ~ "Normals"))
+                                             (DG.DM_ALTRES==1 | DG.DM_GEST==1 & Emb3==1 | DG.DM_IND==1 ) ~ "DM_ALTRES" ,
+                                             (HBA1C.valor>=5.7  &  HBA1C.valor<=6.4)  ~ "Pre_DM" ,
+                                             TRUE ~ "Normals"))
+
+
 
 
 
 ```
 
+## Recodificacions de zeros i uns nous+dates
 
+```{r recodificacions6}
 
-                                
+dt_plana<-dt_plana%>% mutate_at(c("dnaix","entrada","sortida" ),ymd)
 
-
+```
 
 
 ```{r recodificacions temporals,include=F}
@@ -1511,6 +1354,110 @@ dt_plana<-dt_plana%>%mutate(DM_CAT2=case_when( DG.DM1==1  ~ "DM1",
 #dt_plana<-mutate_at(dt_plana, vars( starts_with("PAS_PAD1c") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
 #dt_plana<-mutate_at(dt_plana, vars( starts_with("PAS_PAD2c") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
 #########################################################################################################
+#    agr_pais:
+
+#1.  Àfrica central       
+#2.  Àfrica meridional        
+#3.  Àfrica occidental 
+#4.  Àfrica oriental      
+#5.  Àfrica septentrional     
+#6.  Amèrica central             
+#7.  Amèrica del Nord
+#8.  Amèrica del Sud      
+#9.  Àsia central             
+#10. Àsia meridional             
+#11  Àsia occidental
+#12  Àsia oriental        
+#13  Àsia sud-oriental        
+#14  Austràlia i Nova Zelanda    
+#15  Carib 
+#16  Espanya              
+#17  Europa meridional        
+#18  Europa occidental          
+#19  Europa oriental 
+#20  Europa septentrional                
+#21  Melanèsia               
+#22  Micronèsia                
+#23  Polinèsia
+
+
+
+#xxxiii)
+#dt_plana<-dt_plana%>%mutate(Causes_Sec=ifelse(
+#                                        ALCOHOL_CS==1         | 
+#                                        DM_CAT_HAB1C8==1      |
+#                                        IMC.valor_cat3==2     |
+#                                        DG.IRC2==1            | 
+#                                        Emb3==1               | 
+#                                        TSH.10==1             | 
+#                                        DG.VIH==1             | 
+#                                        DG.TRAST_SIST==1      | 
+#                                        DG.HEMOCROMAT==1      | 
+#                                        FP.ANTIPSICO==1       | 
+#                                        FF.ANTIPSICO==1       | 
+#                                        FP.CORTIS_SIST==1     | 
+#                                        FF.CORTIS_SIST==1     |
+#                                        DG.CANCER==1          |
+#                                        HTG_COLESTASIS==1
+#                                        
+#                                        ,   1,0)) 
+
+
+#dt_plana<-mutate_at(dt_plana, vars( starts_with("Causes_Sec") ), funs( if_else(.==0  | is.na(.)  ,0,1)))
+
+
+
+#xxxiv)
+#dt_plana<-dt_plana%>%mutate(BLOC1=ifelse(ALCOHOL_CS==1,1,0)) 
+
+#xxxv)                            
+#dt_plana<-dt_plana%>%mutate(BLOC2=ifelse(ALCOHOL_CS==1       | 
+#                                        DM_CAT_HAB1C8==1            |
+#                                        IMC.valor_cat3==2     |
+#                                        DG.IRC2==1             
+#                                                    
+#                                        ,1,0)) 
+
+
+
+
+
+
+#dt_temp<-dt_plana%>%select(idp,
+#                      Causes_Sec,
+#                      ALCOHOL_CS,
+#                      DM_CAT_HAB1C8,
+#                      IMC.valor_cat3,
+#                      DG.IRC2,
+#                      Emb3,
+#                      TSH.10,
+#                      DG.VIH,
+#                      DG.TRAST_SIST,
+#                      DG.HEMOCROMAT,
+#                      FP.ANTIPSICO,
+#                      FF.ANTIPSICO,
+#                      FP.CORTIS_SIST,
+#                      FF.CORTIS_SIST)
+
+
+#15.02.2022
+#dt_plana<-dt_plana%>%mutate(HbA1c_8=ifelse(HBA1C.valor>8,1,0))
+
+
+
+# mirar: Glucemia basal 110-125 mg/dl ?? preguntar J.Real!!! 16.2.2022!!
+
+#dt_plana<-dt_plana%>%mutate(DM_CAT2=case_when( ((DM_CAT==0 | DM_CAT==1 | DM_CAT==2) ~ "DM"),
+#                                               ((HBA1C.valor>=5.7  &  HBA1C.valor<=6.4)  ~ "Pre_DM" ), TRUE ~ "Normals" ))
+
+
+
+
+
+
+# mirar: Glucemia basal 110-125 mg/dl ?? preguntar J.Real!!! 16.2.2022!!
+
+
 
 ```
 

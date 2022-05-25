@@ -99,7 +99,7 @@ rmarkdown::render(input="./codi/3_analisi.RMD",
 
 
 
-#MOSTRA!RAI
+#MOSTRA!RAI[antic]
 # -------------------------   PARAMETRES  --------------------------------------------------------
 gc()
 rm(list=ls())
